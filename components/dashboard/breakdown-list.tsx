@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 
 import type { BreakdownItem } from "@/lib/queries/dashboard";
 
@@ -19,11 +20,13 @@ function BreakdownRow({ item, max }: { item: BreakdownItem; max: number }) {
 
 export function BreakdownList({
   title,
+  icon: Icon,
   items,
   emptyLabel,
   href,
 }: {
   title: string;
+  icon: LucideIcon;
   items: BreakdownItem[];
   emptyLabel: string;
   href?: (id: string) => string;
@@ -32,7 +35,10 @@ export function BreakdownList({
 
   return (
     <div className="rounded-xl border bg-card p-4">
-      <h3 className="mb-3 text-sm font-medium">{title}</h3>
+      <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium">
+        <Icon className="size-4 text-muted-foreground" />
+        {title}
+      </h3>
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground">{emptyLabel}</p>
       ) : (

@@ -1,11 +1,15 @@
 import Link from "next/link";
+import { CalendarClock, Calendar } from "lucide-react";
 
 import type { UpcomingMeeting } from "@/lib/queries/dashboard";
 
 export function UpcomingMeetingsList({ meetings }: { meetings: UpcomingMeeting[] }) {
   return (
     <div className="rounded-xl border bg-card p-4">
-      <h3 className="mb-3 text-sm font-medium">Próximas reuniões</h3>
+      <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium">
+        <CalendarClock className="size-4 text-muted-foreground" />
+        Próximas reuniões
+      </h3>
       {meetings.length === 0 ? (
         <p className="text-xs text-muted-foreground">Nenhuma reunião agendada.</p>
       ) : (
@@ -16,7 +20,10 @@ export function UpcomingMeetingsList({ meetings }: { meetings: UpcomingMeeting[]
                 href={`/cards/${meeting.cardId}`}
                 className="flex items-center justify-between gap-2 text-sm hover:underline"
               >
-                <span className="min-w-0 truncate">📅 {meeting.title}</span>
+                <span className="flex min-w-0 items-center gap-1.5 truncate">
+                  <Calendar className="size-3.5 shrink-0 text-muted-foreground" />
+                  {meeting.title}
+                </span>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {new Date(`${meeting.meetingDate}T00:00:00`).toLocaleDateString("pt-BR")}
                   {meeting.meetingTime ? ` ${meeting.meetingTime.slice(0, 5)}` : ""}

@@ -1,20 +1,26 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 
 import { formatRelative } from "@/lib/utils/dates";
 import type { RecentCard } from "@/lib/queries/dashboard";
 
 export function RecentCardsList({
   title,
+  icon: Icon,
   items,
   emptyLabel,
 }: {
   title: string;
+  icon: LucideIcon;
   items: RecentCard[];
   emptyLabel: string;
 }) {
   return (
     <div className="rounded-xl border bg-card p-4">
-      <h3 className="mb-3 text-sm font-medium">{title}</h3>
+      <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium">
+        <Icon className="size-4 text-muted-foreground" />
+        {title}
+      </h3>
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground">{emptyLabel}</p>
       ) : (

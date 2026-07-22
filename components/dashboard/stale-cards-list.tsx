@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Hourglass } from "lucide-react";
 
 import { formatRelative } from "@/lib/utils/dates";
 import type { StaleCard } from "@/lib/queries/dashboard";
@@ -6,7 +7,10 @@ import type { StaleCard } from "@/lib/queries/dashboard";
 export function StaleCardsList({ cards }: { cards: StaleCard[] }) {
   return (
     <div className="rounded-xl border bg-card p-4">
-      <h3 className="mb-3 text-sm font-medium">Cards parados há mais tempo</h3>
+      <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium">
+        <Hourglass className="size-4 text-muted-foreground" />
+        Cards parados há mais tempo
+      </h3>
       {cards.length === 0 ? (
         <p className="text-xs text-muted-foreground">Nenhum card em aberto.</p>
       ) : (
