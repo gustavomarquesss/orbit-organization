@@ -26,6 +26,13 @@ function responsaveisLabel(card: CardWithRelations): string {
     .join(", ");
 }
 
+function modelosLabel(card: CardWithRelations): string {
+  return card.card_modelos
+    .map((cm) => cm.modelo?.name)
+    .filter((name): name is string => Boolean(name))
+    .join(", ");
+}
+
 function fieldValue(card: CardWithRelations, key: SortKey): string {
   switch (key) {
     case "title":
@@ -39,7 +46,7 @@ function fieldValue(card: CardWithRelations, key: SortKey): string {
     case "responsavel":
       return responsaveisLabel(card);
     case "modelo":
-      return card.modelo?.name ?? "";
+      return modelosLabel(card);
     case "updated_at":
       return card.updated_at;
   }
@@ -86,7 +93,7 @@ export function CardListTable({ cards }: { cards: CardWithRelations[] }) {
               </TableCell>
               <TableCell>{card.priority?.label}</TableCell>
               <TableCell>{responsaveisLabel(card) || "—"}</TableCell>
-              <TableCell>{card.modelo?.name ?? "—"}</TableCell>
+              <TableCell>{modelosLabel(card) || "—"}</TableCell>
               <TableCell className="text-xs text-muted-foreground">
                 {new Date(card.updated_at).toLocaleDateString("pt-BR")}
               </TableCell>

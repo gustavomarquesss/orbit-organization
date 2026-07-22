@@ -34,6 +34,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_modelos: {
+        Row: {
+          card_id: string
+          modelo_id: string
+        }
+        Insert: {
+          card_id: string
+          modelo_id: string
+        }
+        Update: {
+          card_id?: string
+          modelo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_modelos_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_modelos_modelo_id_fkey"
+            columns: ["modelo_id"]
+            isOneToOne: false
+            referencedRelation: "modelos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_responsaveis: {
         Row: {
           card_id: string
@@ -131,7 +161,6 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
-          modelo_id: string | null
           observacoes: string | null
           priority_id: string
           search_vector: unknown
@@ -146,7 +175,6 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
-          modelo_id?: string | null
           observacoes?: string | null
           priority_id: string
           search_vector?: unknown
@@ -161,7 +189,6 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
-          modelo_id?: string | null
           observacoes?: string | null
           priority_id?: string
           search_vector?: unknown
@@ -183,13 +210,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "team_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cards_modelo_id_fkey"
-            columns: ["modelo_id"]
-            isOneToOne: false
-            referencedRelation: "modelos"
             referencedColumns: ["id"]
           },
           {

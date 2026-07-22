@@ -1,29 +1,33 @@
 import { cn } from "@/lib/utils";
 
-export function TeamMemberMultiSelect({
-  teamMembers,
+export function MultiSelectChips({
+  options,
   value,
   onChange,
   showSelectAll = false,
+  selectAllLabel = "Todos",
+  clearAllLabel = "Limpar todos",
 }: {
-  teamMembers: { id: string; full_name: string }[];
+  options: { id: string; label: string }[];
   value: string[];
   onChange: (ids: string[]) => void;
   showSelectAll?: boolean;
+  selectAllLabel?: string;
+  clearAllLabel?: string;
 }) {
-  const allSelected = teamMembers.length > 0 && teamMembers.every((m) => value.includes(m.id));
+  const allSelected = options.length > 0 && options.every((o) => value.includes(o.id));
 
   function toggle(id: string) {
     onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   }
 
   function toggleAll() {
-    onChange(allSelected ? [] : teamMembers.map((m) => m.id));
+    onChange(allSelected ? [] : options.map((o) => o.id));
   }
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {showSelectAll && teamMembers.length > 0 ? (
+      {showSelectAll && options.length > 0 ? (
         <button
           type="button"
           onClick={toggleAll}
@@ -34,16 +38,16 @@ export function TeamMemberMultiSelect({
               : "border-border text-muted-foreground hover:bg-muted",
           )}
         >
-          {allSelected ? "Limpar todos" : "Todos"}
+          {allSelected ? clearAllLabel : selectAllLabel}
         </button>
       ) : null}
-      {teamMembers.map((member) => {
-        const active = value.includes(member.id);
+      {options.map((option) => {
+        const active = value.includes(option.id);
         return (
           <button
-            key={member.id}
+            key={option.id}
             type="button"
-            onClick={() => toggle(member.id)}
+            onClick={() => toggle(option.id)}
             className={cn(
               "rounded-full border px-2.5 py-1 text-xs transition-colors",
               active
@@ -51,7 +55,7 @@ export function TeamMemberMultiSelect({
                 : "border-border text-muted-foreground hover:bg-muted",
             )}
           >
-            {member.full_name}
+            {option.label}
           </button>
         );
       })}

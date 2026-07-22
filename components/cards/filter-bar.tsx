@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { FilterSelect } from "@/components/cards/filter-select";
 import type { CardLookups } from "@/lib/queries/cards";
 
-const FILTER_KEYS = ["tipo", "status", "prioridade", "responsavel", "modelo", "tag", "de", "ate"];
+const FILTER_KEYS = ["tipo", "status", "prioridade", "responsavel", "modelo", "tag", "de", "ate", "pendente"];
 
 export function FilterBar({ lookups }: { lookups: CardLookups }) {
   const router = useRouter();
@@ -32,6 +32,12 @@ export function FilterBar({ lookups }: { lookups: CardLookups }) {
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
+      {searchParams.get("pendente") === "1" ? (
+        <Button variant="secondary" size="sm" onClick={() => setParam("pendente", "")} className="gap-1.5">
+          Pendentes
+          <X className="size-3.5" />
+        </Button>
+      ) : null}
       <FilterSelect
         value={searchParams.get("tipo") ?? ""}
         onChange={(v) => setParam("tipo", v)}

@@ -19,6 +19,7 @@ export default async function CardsPage({
     tagIds: get("tag") ? [get("tag") as string] : undefined,
     from: get("de"),
     to: get("ate"),
+    pendente: get("pendente") === "1",
   };
   const view = get("view") === "list" ? "list" : "grid";
 
@@ -26,7 +27,12 @@ export default async function CardsPage({
 
   return (
     <>
-      <PageHeader title="Cards" description="Todo o conteúdo da equipe em um único lugar." />
+      <PageHeader
+        title="Cards"
+        description={
+          filters.pendente ? "Mostrando apenas cards pendentes." : "Todo o conteúdo da equipe em um único lugar."
+        }
+      />
       <CardsExplorer cards={cards} lookups={lookups} view={view} />
     </>
   );

@@ -71,15 +71,18 @@ export async function searchCards(query: string): Promise<SearchResult[]> {
   }
 
   if (modeloMatch.data && modeloMatch.data.length > 0) {
-    const { data } = await supabase
-      .from("cards")
-      .select(RESULT_SELECT)
+    const { data: modeloRows } = await supabase
+      .from("card_modelos")
+      .select("card_id")
       .in(
         "modelo_id",
         modeloMatch.data.map((m) => m.id),
-      )
-      .limit(15);
-    for (const row of (data ?? []) as unknown as RawResult[]) results.set(row.id, mapRow(row));
+      );
+    const cardIds = [...new Set((modeloRows ?? []).map((r) => r.card_id))];
+    if (cardIds.length > 0) {
+      const { data } = await supabase.from("cards").select(RESULT_SELECT).in("id", cardIds).limit(15);
+      for (const row of (data ?? []) as unknown as RawResult[]) results.set(row.id, mapRow(row));
+    }
   }
 
   if (responsavelMatch.data && responsavelMatch.data.length > 0) {

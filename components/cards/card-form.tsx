@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { TagInput, type TagOption } from "@/components/cards/tag-input";
 import { MeetingFields } from "@/components/cards/meeting-fields";
-import { TeamMemberMultiSelect } from "@/components/cards/team-member-multi-select";
+import { MultiSelectChips } from "@/components/cards/multi-select-chips";
 import { createCard, deleteCard, updateCard } from "@/lib/actions/cards";
 import { deleteMeetingDetails, upsertMeetingDetails } from "@/lib/actions/meetings";
 import { cardFormSchema } from "@/lib/validations/card";
@@ -43,7 +43,7 @@ function toDefaultValues(card?: CardWithRelations | null, meeting?: MeetingDetai
     title: card?.title ?? "",
     description: card?.description ?? "",
     card_type_id: card?.card_type?.id ?? "",
-    modelo_id: card?.modelo?.id ?? "",
+    modelo_ids: card?.card_modelos?.map((cm) => cm.modelo?.id).filter((id): id is string => Boolean(id)) ?? [],
     status_id: card?.status?.id ?? "",
     priority_id: card?.priority?.id ?? "",
     responsavel_ids:
@@ -137,59 +137,32 @@ export function CardForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="card_type_id">Tipo</Label>
-          <Controller
-            control={control}
-            name="card_type_id"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="card_type_id" className="w-full">
-                  <SelectValue placeholder="Selecione...">
-                    {(value: string) => {
-                      const type = lookups.cardTypes.find((t) => t.id === value);
-                      return type ? `${type.emoji} ${type.label}` : "Selecione...";
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {lookups.cardTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.emoji} {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.card_type_id ? <p className="text-xs text-destructive">{errors.card_type_id.message}</p> : null}
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="modelo_id">Modelo</Label>
-          <Controller
-            control={control}
-            name="modelo_id"
-            render={({ field }) => (
-              <Select value={field.value || "none"} onValueChange={(v) => field.onChange(v === "none" ? "" : v)}>
-                <SelectTrigger id="modelo_id" className="w-full">
-                  <SelectValue placeholder="Nenhuma">
-                    {(value: string) => lookups.modelos.find((m) => m.id === value)?.name ?? "Nenhuma"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  {lookups.modelos.map((modelo) => (
-                    <SelectItem key={modelo.id} value={modelo.id}>
-                      {modelo.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="card_type_id">Tipo</Label>
+        <Controller
+          control={control}
+          name="card_type_id"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="card_type_id" className="w-full">
+                <SelectValue placeholder="Selecione...">
+                  {(value: string) => {
+                    const type = lookups.cardTypes.find((t) => t.id === value);
+                    return type ? `${type.emoji} ${type.label}` : "Selecione...";
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {lookups.cardTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.emoji} {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.card_type_id ? <p className="text-xs text-destructive">{errors.card_type_id.message}</p> : null}
       </div>
 
       <div className="space-y-1.5">
@@ -265,11 +238,29 @@ export function CardForm({
           control={control}
           name="responsavel_ids"
           render={({ field }) => (
-            <TeamMemberMultiSelect
-              teamMembers={lookups.teamMembers}
+            <MultiSelectChips
+              options={lookups.teamMembers.map((m) => ({ id: m.id, label: m.full_name }))}
               value={field.value}
               onChange={field.onChange}
               showSelectAll
+            />
+          )}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Modelo</Label>
+        <Controller
+          control={control}
+          name="modelo_ids"
+          render={({ field }) => (
+            <MultiSelectChips
+              options={lookups.modelos.map((m) => ({ id: m.id, label: m.name }))}
+              value={field.value}
+              onChange={field.onChange}
+              showSelectAll
+              selectAllLabel="Todas"
+              clearAllLabel="Limpar todas"
             />
           )}
         />

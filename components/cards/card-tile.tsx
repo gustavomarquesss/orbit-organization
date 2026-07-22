@@ -13,6 +13,13 @@ function formatResponsaveis(card: CardWithRelations): string {
   return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
+function formatModelos(card: CardWithRelations): string {
+  const names = card.card_modelos.map((cm) => cm.modelo?.name).filter((name): name is string => Boolean(name));
+  if (names.length === 0) return "";
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+}
+
 export function CardTile({ card }: { card: CardWithRelations }) {
   return (
     <Link
@@ -47,7 +54,7 @@ export function CardTile({ card }: { card: CardWithRelations }) {
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
         <span className="truncate">{formatResponsaveis(card)}</span>
-        {card.modelo ? <span className="shrink-0">{card.modelo.name}</span> : null}
+        {formatModelos(card) ? <span className="shrink-0 truncate">{formatModelos(card)}</span> : null}
       </div>
     </Link>
   );

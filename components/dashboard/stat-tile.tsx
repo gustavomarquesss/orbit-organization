@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -25,16 +26,18 @@ export function StatTile({
   value,
   icon: Icon,
   tone,
+  href,
 }: {
   label: string;
   value: number;
   icon: LucideIcon;
   tone?: "yellow" | "green" | "red";
+  href?: string;
 }) {
   const active = tone && value > 0 ? TONE_STYLES[tone] : null;
 
-  return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+  const content = (
+    <>
       <div
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-lg",
@@ -47,6 +50,19 @@ export function StatTile({
         <div className={cn("text-2xl font-semibold tabular-nums", active?.value)}>{value}</div>
         <div className="text-xs text-muted-foreground">{label}</div>
       </div>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/20 hover:bg-accent/40"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className="flex items-center gap-3 rounded-xl border bg-card p-4">{content}</div>;
 }

@@ -3,7 +3,7 @@ import { Controller, type Control, type UseFormRegister } from "react-hook-form"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TeamMemberMultiSelect } from "@/components/cards/team-member-multi-select";
+import { MultiSelectChips } from "@/components/cards/multi-select-chips";
 import type { CardFormValues } from "@/components/cards/card-form";
 
 export function MeetingFields({
@@ -36,8 +36,8 @@ export function MeetingFields({
           control={control}
           name="participant_ids"
           render={({ field }) => (
-            <TeamMemberMultiSelect
-              teamMembers={teamMembers}
+            <MultiSelectChips
+              options={teamMembers.map((m) => ({ id: m.id, label: m.full_name }))}
               value={field.value ?? []}
               onChange={field.onChange}
               showSelectAll
