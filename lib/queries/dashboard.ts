@@ -55,14 +55,14 @@ export type RecentCard = {
   id: string;
   title: string;
   timestamp: string;
-  card_type: { emoji: string } | null;
+  card_type: { key: string; emoji: string } | null;
 };
 
 export async function getRecentCards(limit = 5): Promise<RecentCard[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("cards")
-    .select("id, title, created_at, card_type:card_types!cards_card_type_id_fkey(emoji)")
+    .select("id, title, created_at, card_type:card_types!cards_card_type_id_fkey(key, emoji)")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -71,7 +71,7 @@ export async function getRecentCards(limit = 5): Promise<RecentCard[]> {
     id: row.id,
     title: row.title,
     timestamp: row.created_at,
-    card_type: row.card_type as unknown as { emoji: string } | null,
+    card_type: row.card_type as unknown as { key: string; emoji: string } | null,
   }));
 }
 
@@ -79,7 +79,7 @@ export async function getRecentlyUpdatedCards(limit = 5): Promise<RecentCard[]> 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("cards")
-    .select("id, title, updated_at, card_type:card_types!cards_card_type_id_fkey(emoji)")
+    .select("id, title, updated_at, card_type:card_types!cards_card_type_id_fkey(key, emoji)")
     .order("updated_at", { ascending: false })
     .limit(limit);
 
@@ -88,7 +88,7 @@ export async function getRecentlyUpdatedCards(limit = 5): Promise<RecentCard[]> 
     id: row.id,
     title: row.title,
     timestamp: row.updated_at,
-    card_type: row.card_type as unknown as { emoji: string } | null,
+    card_type: row.card_type as unknown as { key: string; emoji: string } | null,
   }));
 }
 

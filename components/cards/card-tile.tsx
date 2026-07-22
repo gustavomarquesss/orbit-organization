@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { ColorBadge } from "@/components/cards/color-badge";
+import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import type { CardWithRelations } from "@/lib/queries/cards";
 
 function formatResponsaveis(card: CardWithRelations): string {
@@ -21,6 +22,7 @@ function formatModelos(card: CardWithRelations): string {
 }
 
 export function CardTile({ card }: { card: CardWithRelations }) {
+  const TypeIcon = getCardTypeIcon(card.card_type?.key);
   return (
     <Link
       href={`/cards/${card.id}`}
@@ -28,7 +30,7 @@ export function CardTile({ card }: { card: CardWithRelations }) {
     >
       <div className="flex items-start justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>{card.card_type?.emoji}</span>
+          <TypeIcon className="size-3.5" />
           {card.card_type?.label}
         </span>
         {card.status ? <ColorBadge label={card.status.label} color={card.status.color} /> : null}

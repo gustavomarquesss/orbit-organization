@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { searchCards, type SearchResult } from "@/lib/actions/search";
+import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter();
@@ -59,13 +60,16 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             {isPending ? "Buscando..." : query.trim() ? "Nenhum resultado." : "Digite para buscar cards, tipos, tags, modelos ou responsáveis."}
           </CommandEmpty>
           <CommandGroup heading="Cards">
-            {visibleResults.map((result) => (
-              <CommandItem key={result.id} value={result.id} onSelect={() => selectCard(result.id)}>
-                <span>{result.emoji}</span>
-                <span className="flex-1 truncate">{result.title}</span>
-                <span className="text-xs text-muted-foreground">{result.statusLabel}</span>
-              </CommandItem>
-            ))}
+            {visibleResults.map((result) => {
+              const TypeIcon = getCardTypeIcon(result.typeKey);
+              return (
+                <CommandItem key={result.id} value={result.id} onSelect={() => selectCard(result.id)}>
+                  <TypeIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="flex-1 truncate">{result.title}</span>
+                  <span className="text-xs text-muted-foreground">{result.statusLabel}</span>
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         </CommandList>
       </Command>

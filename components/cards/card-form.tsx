@@ -19,6 +19,7 @@ import {
 import { TagInput, type TagOption } from "@/components/cards/tag-input";
 import { MeetingFields } from "@/components/cards/meeting-fields";
 import { MultiSelectChips } from "@/components/cards/multi-select-chips";
+import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { createCard, deleteCard, updateCard } from "@/lib/actions/cards";
 import { deleteMeetingDetails, upsertMeetingDetails } from "@/lib/actions/meetings";
 import { cardFormSchema } from "@/lib/validations/card";
@@ -148,16 +149,29 @@ export function CardForm({
                 <SelectValue placeholder="Selecione...">
                   {(value: string) => {
                     const type = lookups.cardTypes.find((t) => t.id === value);
-                    return type ? `${type.emoji} ${type.label}` : "Selecione...";
+                    if (!type) return "Selecione...";
+                    const Icon = getCardTypeIcon(type.key);
+                    return (
+                      <span className="flex items-center gap-2">
+                        <Icon className="size-4 text-muted-foreground" />
+                        {type.label}
+                      </span>
+                    );
                   }}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {lookups.cardTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.emoji} {type.label}
-                  </SelectItem>
-                ))}
+                {lookups.cardTypes.map((type) => {
+                  const Icon = getCardTypeIcon(type.key);
+                  return (
+                    <SelectItem key={type.id} value={type.id}>
+                      <span className="flex items-center gap-2">
+                        <Icon className="size-4 text-muted-foreground" />
+                        {type.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           )}

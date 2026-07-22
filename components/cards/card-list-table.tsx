@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ColorBadge } from "@/components/cards/color-badge";
+import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import type { CardWithRelations } from "@/lib/queries/cards";
 
 type SortKey = "title" | "tipo" | "status" | "prioridade" | "responsavel" | "modelo" | "updated_at";
@@ -82,10 +83,15 @@ export function CardListTable({ cards }: { cards: CardWithRelations[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sorted.map((card) => (
+          {sorted.map((card) => {
+            const TypeIcon = getCardTypeIcon(card.card_type?.key);
+            return (
             <TableRow key={card.id} className="cursor-pointer" onClick={() => router.push(`/cards/${card.id}`)}>
               <TableCell className="font-medium">
-                {card.card_type?.emoji} {card.title}
+                <span className="flex items-center gap-1.5">
+                  <TypeIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  {card.title}
+                </span>
               </TableCell>
               <TableCell>{card.card_type?.label}</TableCell>
               <TableCell>
@@ -98,7 +104,8 @@ export function CardListTable({ cards }: { cards: CardWithRelations[] }) {
                 {new Date(card.updated_at).toLocaleDateString("pt-BR")}
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </div>

@@ -42,7 +42,7 @@ export function FilterBar({ lookups }: { lookups: CardLookups }) {
         value={searchParams.get("tipo") ?? ""}
         onChange={(v) => setParam("tipo", v)}
         placeholder="Tipo"
-        options={lookups.cardTypes.map((t) => ({ id: t.id, label: `${t.emoji} ${t.label}` }))}
+        options={lookups.cardTypes.map((t) => ({ id: t.id, label: t.label }))}
       />
       <FilterSelect
         value={searchParams.get("status") ?? ""}

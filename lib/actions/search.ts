@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export type SearchResult = {
   id: string;
   title: string;
-  emoji: string;
+  typeKey: string;
   typeLabel: string;
   statusLabel: string;
   statusColor: string;
@@ -13,14 +13,14 @@ export type SearchResult = {
 
 const RESULT_SELECT = `
   id, title,
-  card_type:card_types!cards_card_type_id_fkey(emoji, label),
+  card_type:card_types!cards_card_type_id_fkey(key, label),
   status:statuses!cards_status_id_fkey(label, color)
 `;
 
 type RawResult = {
   id: string;
   title: string;
-  card_type: { emoji: string; label: string } | null;
+  card_type: { key: string; label: string } | null;
   status: { label: string; color: string } | null;
 };
 
@@ -28,7 +28,7 @@ function mapRow(row: RawResult): SearchResult {
   return {
     id: row.id,
     title: row.title,
-    emoji: row.card_type?.emoji ?? "",
+    typeKey: row.card_type?.key ?? "",
     typeLabel: row.card_type?.label ?? "",
     statusLabel: row.status?.label ?? "",
     statusColor: row.status?.color ?? "#888888",
