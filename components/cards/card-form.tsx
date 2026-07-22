@@ -25,8 +25,11 @@ import { meetingFieldsSchema } from "@/lib/validations/meeting";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 import type { MeetingDetails } from "@/lib/queries/meetings";
 
+// meeting_date não usa o schema estrito de meetingFieldsSchema (min(1)) aqui:
+// o valor padrão é "" para cards que não são Reunião, e a exigência de data
+// só quando isReuniao é verificada manualmente no onSubmit abaixo.
 const cardFormValuesSchema = cardFormSchema.extend({
-  meeting_date: meetingFieldsSchema.shape.meeting_date.optional(),
+  meeting_date: z.string().optional(),
   meeting_time: meetingFieldsSchema.shape.meeting_time,
   assuntos: meetingFieldsSchema.shape.assuntos,
   participant_ids: meetingFieldsSchema.shape.participant_ids,
