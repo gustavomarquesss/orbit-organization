@@ -22,9 +22,9 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Total de Cards" value={stats.total} icon={LayoutGrid} />
-        <StatTile label="Pendentes" value={stats.pendentes} icon={Clock} />
-        <StatTile label="Concluídos" value={stats.concluidos} icon={CheckCircle2} />
-        <StatTile label="Urgentes" value={stats.urgentes} icon={TriangleAlert} />
+        <StatTile label="Pendentes" value={stats.pendentes} icon={Clock} tone="yellow" />
+        <StatTile label="Concluídos" value={stats.concluidos} icon={CheckCircle2} tone="green" />
+        <StatTile label="Urgentes" value={stats.urgentes} icon={TriangleAlert} tone="red" />
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
