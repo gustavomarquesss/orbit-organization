@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { TagInput, type TagOption } from "@/components/cards/tag-input";
 import { MeetingFields } from "@/components/cards/meeting-fields";
+import { TeamMemberMultiSelect } from "@/components/cards/team-member-multi-select";
 import { createCard, deleteCard, updateCard } from "@/lib/actions/cards";
 import { deleteMeetingDetails, upsertMeetingDetails } from "@/lib/actions/meetings";
 import { cardFormSchema } from "@/lib/validations/card";
@@ -45,7 +46,8 @@ function toDefaultValues(card?: CardWithRelations | null, meeting?: MeetingDetai
     modelo_id: card?.modelo?.id ?? "",
     status_id: card?.status?.id ?? "",
     priority_id: card?.priority?.id ?? "",
-    responsavel_id: card?.responsavel?.id ?? "",
+    responsavel_ids:
+      card?.card_responsaveis?.map((cr) => cr.team_member?.id).filter((id): id is string => Boolean(id)) ?? [],
     observacoes: card?.observacoes ?? "",
     tag_ids: card?.card_tags?.map((ct) => ct.tag?.id).filter((id): id is string => Boolean(id)) ?? [],
     meeting_date: meeting?.meeting_date ?? "",
@@ -205,7 +207,7 @@ export function CardForm({
         <MeetingFields register={register} control={control} teamMembers={lookups.teamMembers} />
       ) : null}
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="status_id">Status</Label>
           <Controller
@@ -255,34 +257,22 @@ export function CardForm({
           />
           {errors.priority_id ? <p className="text-xs text-destructive">{errors.priority_id.message}</p> : null}
         </div>
+      </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="responsavel_id">Responsável</Label>
-          <Controller
-            control={control}
-            name="responsavel_id"
-            render={({ field }) => (
-              <Select
-                value={field.value || "none"}
-                onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
-              >
-                <SelectTrigger id="responsavel_id" className="w-full">
-                  <SelectValue placeholder="Nenhum">
-                    {(value: string) => lookups.teamMembers.find((m) => m.id === value)?.full_name ?? "Nenhum"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {lookups.teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
+      <div className="space-y-1.5">
+        <Label>Responsáveis</Label>
+        <Controller
+          control={control}
+          name="responsavel_ids"
+          render={({ field }) => (
+            <TeamMemberMultiSelect
+              teamMembers={lookups.teamMembers}
+              value={field.value}
+              onChange={field.onChange}
+              showSelectAll
+            />
+          )}
+        />
       </div>
 
       <div className="space-y-1.5">

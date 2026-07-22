@@ -16,6 +16,15 @@ async function syncCardTags(supabase: SupabaseClient, cardId: string, tagIds: st
   }
 }
 
+async function syncCardResponsaveis(supabase: SupabaseClient, cardId: string, responsavelIds: string[]) {
+  await supabase.from("card_responsaveis").delete().eq("card_id", cardId);
+  if (responsavelIds.length > 0) {
+    await supabase
+      .from("card_responsaveis")
+      .insert(responsavelIds.map((team_member_id) => ({ card_id: cardId, team_member_id })));
+  }
+}
+
 export async function createCard(input: CardFormInput): Promise<CardActionResult> {
   const parsed = cardFormSchema.safeParse(input);
   if (!parsed.success) {
@@ -28,7 +37,7 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre novamente." };
 
-  const { tag_ids, description, observacoes, modelo_id, responsavel_id, ...rest } = parsed.data;
+  const { tag_ids, responsavel_ids, description, observacoes, modelo_id, ...rest } = parsed.data;
 
   const { data: card, error } = await supabase
     .from("cards")
@@ -37,7 +46,6 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
       description: description || null,
       observacoes: observacoes || null,
       modelo_id: modelo_id || null,
-      responsavel_id: responsavel_id || null,
       created_by: user.id,
     })
     .select("id")
@@ -46,6 +54,7 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
   if (error || !card) return { error: "Não foi possível criar o card." };
 
   await syncCardTags(supabase, card.id, tag_ids);
+  await syncCardResponsaveis(supabase, card.id, responsavel_ids);
 
   revalidatePath("/cards");
   revalidatePath("/");
@@ -59,7 +68,7 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
   }
 
   const supabase = await createClient();
-  const { tag_ids, description, observacoes, modelo_id, responsavel_id, ...rest } = parsed.data;
+  const { tag_ids, responsavel_ids, description, observacoes, modelo_id, ...rest } = parsed.data;
 
   const { error } = await supabase
     .from("cards")
@@ -68,13 +77,13 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
       description: description || null,
       observacoes: observacoes || null,
       modelo_id: modelo_id || null,
-      responsavel_id: responsavel_id || null,
     })
     .eq("id", id);
 
   if (error) return { error: "Não foi possível salvar o card." };
 
   await syncCardTags(supabase, id, tag_ids);
+  await syncCardResponsaveis(supabase, id, responsavel_ids);
 
   revalidatePath("/cards");
   revalidatePath("/");

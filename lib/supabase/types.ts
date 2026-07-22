@@ -34,6 +34,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_responsaveis: {
+        Row: {
+          card_id: string
+          team_member_id: string
+        }
+        Insert: {
+          card_id: string
+          team_member_id: string
+        }
+        Update: {
+          card_id?: string
+          team_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_responsaveis_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_responsaveis_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_tags: {
         Row: {
           card_id: string
@@ -104,7 +134,6 @@ export type Database = {
           modelo_id: string | null
           observacoes: string | null
           priority_id: string
-          responsavel_id: string | null
           search_vector: unknown
           status_id: string
           title: string
@@ -120,7 +149,6 @@ export type Database = {
           modelo_id?: string | null
           observacoes?: string | null
           priority_id: string
-          responsavel_id?: string | null
           search_vector?: unknown
           status_id: string
           title: string
@@ -136,7 +164,6 @@ export type Database = {
           modelo_id?: string | null
           observacoes?: string | null
           priority_id?: string
-          responsavel_id?: string | null
           search_vector?: unknown
           status_id?: string
           title?: string
@@ -170,13 +197,6 @@ export type Database = {
             columns: ["priority_id"]
             isOneToOne: false
             referencedRelation: "priorities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cards_responsavel_id_fkey"
-            columns: ["responsavel_id"]
-            isOneToOne: false
-            referencedRelation: "team_members"
             referencedColumns: ["id"]
           },
           {

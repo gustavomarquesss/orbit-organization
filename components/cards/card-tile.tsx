@@ -4,6 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { ColorBadge } from "@/components/cards/color-badge";
 import type { CardWithRelations } from "@/lib/queries/cards";
 
+function formatResponsaveis(card: CardWithRelations): string {
+  const names = card.card_responsaveis
+    .map((cr) => cr.team_member?.full_name)
+    .filter((name): name is string => Boolean(name));
+  if (names.length === 0) return "Sem responsável";
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+}
+
 export function CardTile({ card }: { card: CardWithRelations }) {
   return (
     <Link
@@ -37,7 +46,7 @@ export function CardTile({ card }: { card: CardWithRelations }) {
       ) : null}
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
-        <span className="truncate">{card.responsavel?.full_name ?? "Sem responsável"}</span>
+        <span className="truncate">{formatResponsaveis(card)}</span>
         {card.modelo ? <span className="shrink-0">{card.modelo.name}</span> : null}
       </div>
     </Link>

@@ -40,4 +40,5 @@ insert into public.tags (name) values
   ('VIP'),
   ('Marketing'),
   ('Roteiro'),
-  ('Referência');
+  ('Referência'),
+  ('Alinhamento');

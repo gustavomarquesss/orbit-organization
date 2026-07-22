@@ -7,7 +7,7 @@ export const cardFormSchema = z.object({
   modelo_id: z.string().optional(),
   status_id: z.string().min(1, "Selecione um status."),
   priority_id: z.string().min(1, "Selecione uma prioridade."),
-  responsavel_id: z.string().optional(),
+  responsavel_ids: z.array(z.string()),
   observacoes: z.string().trim().max(5000, "Observações muito longas.").optional(),
   tag_ids: z.array(z.string()),
 });

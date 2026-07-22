@@ -83,15 +83,18 @@ export async function searchCards(query: string): Promise<SearchResult[]> {
   }
 
   if (responsavelMatch.data && responsavelMatch.data.length > 0) {
-    const { data } = await supabase
-      .from("cards")
-      .select(RESULT_SELECT)
+    const { data: responsavelRows } = await supabase
+      .from("card_responsaveis")
+      .select("card_id")
       .in(
-        "responsavel_id",
+        "team_member_id",
         responsavelMatch.data.map((m) => m.id),
-      )
-      .limit(15);
-    for (const row of (data ?? []) as unknown as RawResult[]) results.set(row.id, mapRow(row));
+      );
+    const cardIds = [...new Set((responsavelRows ?? []).map((r) => r.card_id))];
+    if (cardIds.length > 0) {
+      const { data } = await supabase.from("cards").select(RESULT_SELECT).in("id", cardIds).limit(15);
+      for (const row of (data ?? []) as unknown as RawResult[]) results.set(row.id, mapRow(row));
+    }
   }
 
   if (tagMatch.data && tagMatch.data.length > 0) {

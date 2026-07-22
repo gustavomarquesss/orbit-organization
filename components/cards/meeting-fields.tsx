@@ -3,7 +3,7 @@ import { Controller, type Control, type UseFormRegister } from "react-hook-form"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { TeamMemberMultiSelect } from "@/components/cards/team-member-multi-select";
 import type { CardFormValues } from "@/components/cards/card-form";
 
 export function MeetingFields({
@@ -36,32 +36,12 @@ export function MeetingFields({
           control={control}
           name="participant_ids"
           render={({ field }) => (
-            <div className="flex flex-wrap gap-1.5">
-              {teamMembers.map((member) => {
-                const active = field.value?.includes(member.id) ?? false;
-                return (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() =>
-                      field.onChange(
-                        active
-                          ? (field.value ?? []).filter((id: string) => id !== member.id)
-                          : [...(field.value ?? []), member.id],
-                      )
-                    }
-                    className={cn(
-                      "rounded-full border px-2.5 py-1 text-xs transition-colors",
-                      active
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    {member.full_name}
-                  </button>
-                );
-              })}
-            </div>
+            <TeamMemberMultiSelect
+              teamMembers={teamMembers}
+              value={field.value ?? []}
+              onChange={field.onChange}
+              showSelectAll
+            />
           )}
         />
       </div>

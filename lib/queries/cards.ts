@@ -7,9 +7,9 @@ const CARD_SELECT = `
   card_type:card_types!cards_card_type_id_fkey(id, key, label, emoji),
   status:statuses!cards_status_id_fkey(id, key, label, color),
   priority:priorities!cards_priority_id_fkey(id, key, label, color),
-  responsavel:team_members!cards_responsavel_id_fkey(id, full_name, avatar_color),
   modelo:modelos!cards_modelo_id_fkey(id, name),
-  card_tags(tag:tags(id, name))
+  card_tags(tag:tags(id, name)),
+  card_responsaveis(team_member:team_members(id, full_name, avatar_color))
 `;
 
 export type CardWithRelations = {
@@ -22,9 +22,9 @@ export type CardWithRelations = {
   card_type: { id: string; key: string; label: string; emoji: string } | null;
   status: { id: string; key: string; label: string; color: string } | null;
   priority: { id: string; key: string; label: string; color: string } | null;
-  responsavel: { id: string; full_name: string; avatar_color: string } | null;
   modelo: { id: string; name: string } | null;
   card_tags: { tag: { id: string; name: string } | null }[];
+  card_responsaveis: { team_member: { id: string; full_name: string; avatar_color: string } | null }[];
 };
 
 export async function getCardById(id: string): Promise<CardWithRelations | null> {
@@ -46,15 +46,35 @@ export type CardFilters = {
   to?: string;
 };
 
+async function cardIdsFromJoinTable(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  table: "card_tags" | "card_responsaveis",
+  column: "tag_id" | "team_member_id",
+  ids: string[],
+): Promise<string[]> {
+  const { data, error } = await supabase.from(table).select("card_id").in(column, ids);
+  if (error) throw error;
+  return [...new Set((data ?? []).map((row) => row.card_id))];
+}
+
 export async function getCardsWithRelations(filters: CardFilters = {}): Promise<CardWithRelations[]> {
   const supabase = await createClient();
 
   let cardIdsFromTags: string[] | null = null;
   if (filters.tagIds && filters.tagIds.length > 0) {
-    const { data, error } = await supabase.from("card_tags").select("card_id").in("tag_id", filters.tagIds);
-    if (error) throw error;
-    cardIdsFromTags = [...new Set((data ?? []).map((row) => row.card_id))];
+    cardIdsFromTags = await cardIdsFromJoinTable(supabase, "card_tags", "tag_id", filters.tagIds);
     if (cardIdsFromTags.length === 0) return [];
+  }
+
+  let cardIdsFromResponsavel: string[] | null = null;
+  if (filters.responsavelId) {
+    cardIdsFromResponsavel = await cardIdsFromJoinTable(
+      supabase,
+      "card_responsaveis",
+      "team_member_id",
+      [filters.responsavelId],
+    );
+    if (cardIdsFromResponsavel.length === 0) return [];
   }
 
   let query = supabase.from("cards").select(CARD_SELECT).order("updated_at", { ascending: false });
@@ -62,11 +82,11 @@ export async function getCardsWithRelations(filters: CardFilters = {}): Promise<
   if (filters.cardTypeId) query = query.eq("card_type_id", filters.cardTypeId);
   if (filters.statusId) query = query.eq("status_id", filters.statusId);
   if (filters.priorityId) query = query.eq("priority_id", filters.priorityId);
-  if (filters.responsavelId) query = query.eq("responsavel_id", filters.responsavelId);
   if (filters.modeloId) query = query.eq("modelo_id", filters.modeloId);
   if (filters.from) query = query.gte("created_at", filters.from);
   if (filters.to) query = query.lte("created_at", `${filters.to}T23:59:59`);
   if (cardIdsFromTags) query = query.in("id", cardIdsFromTags);
+  if (cardIdsFromResponsavel) query = query.in("id", cardIdsFromResponsavel);
 
   const { data, error } = await query;
 
