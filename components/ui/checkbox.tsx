@@ -8,13 +8,16 @@ import { cn } from "@/lib/utils"
 
 function Checkbox({
   className,
+  checked,
   ...props
 }: CheckboxPrimitive.Root.Props) {
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
+      checked={checked}
       className={cn(
-        "peer flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-input bg-transparent shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground dark:bg-input/30",
+        "peer flex size-4 shrink-0 items-center justify-center rounded-[4px] border shadow-xs outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+        checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-transparent dark:bg-input/30",
         className
       )}
       {...props}

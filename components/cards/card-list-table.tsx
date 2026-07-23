@@ -107,8 +107,13 @@ export function CardListTable({
         <TableHeader>
           <TableRow>
             {selectable ? (
-              <TableHead className="w-8">
-                <Checkbox checked={allSelected} onCheckedChange={() => onToggleSelectAll?.(sorted.map((c) => c.id))} />
+              <TableHead
+                className="w-8 cursor-pointer"
+                onClick={() => onToggleSelectAll?.(sorted.map((c) => c.id))}
+              >
+                <span className="flex size-8 items-center justify-center">
+                  <Checkbox checked={allSelected} className="pointer-events-none" />
+                </span>
               </TableHead>
             ) : null}
             {COLUMNS.map((col) => (
@@ -131,11 +136,16 @@ export function CardListTable({
               style={card.priority?.color ? { borderLeft: `3px solid ${card.priority.color}` } : undefined}
             >
               {selectable ? (
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={selectedIds?.has(card.id) ?? false}
-                    onCheckedChange={() => onToggleSelect?.(card.id)}
-                  />
+                <TableCell
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleSelect?.(card.id);
+                  }}
+                >
+                  <span className="flex size-8 items-center justify-center">
+                    <Checkbox checked={selectedIds?.has(card.id) ?? false} className="pointer-events-none" />
+                  </span>
                 </TableCell>
               ) : null}
               <TableCell className="font-medium">
