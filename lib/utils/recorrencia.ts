@@ -1,4 +1,5 @@
 export const CARD_RECORRENCIA_OPTIONS = [
+  { value: "diaria", label: "Diária" },
   { value: "semanal", label: "Semanal" },
   { value: "quinzenal", label: "Quinzenal" },
   { value: "mensal", label: "Mensal" },
