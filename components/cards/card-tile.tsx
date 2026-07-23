@@ -4,7 +4,7 @@ import { CalendarClock, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusProgress } from "@/components/cards/status-progress";
-import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
+import { renderCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { formatCurrencyBRL, nextRenewalDate } from "@/lib/utils/financeiro";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
 import { getCardAccentColor } from "@/lib/utils/card-accent";
@@ -68,7 +68,6 @@ function PrazoBadge({ card }: { card: CardWithRelations }) {
 }
 
 function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWithRelations } & SelectionProps) {
-  const TypeIcon = getCardTypeIcon("financeiro");
   const details = card.financeiro_details;
   const renewal = details ? nextRenewalDate(details.data_inicio, details.recorrencia) : null;
 
@@ -79,7 +78,7 @@ function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWith
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
-          <TypeIcon className="size-3.5 shrink-0" />
+          {renderCardTypeIcon("financeiro", "size-3.5 shrink-0")}
           <span className="truncate">Financeiro</span>
         </span>
         <div className="flex shrink-0 items-center gap-2">
@@ -129,7 +128,6 @@ export function CardTile({
     return <FinanceiroCardTile card={card} selected={selected} onToggleSelect={onToggleSelect} />;
   }
 
-  const TypeIcon = getCardTypeIcon(card.card_type?.key);
   const accentColor = getCardAccentColor(card);
   return (
     <Link
@@ -146,7 +144,7 @@ export function CardTile({
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
-          <TypeIcon className="size-3.5 shrink-0" />
+          {renderCardTypeIcon(card.card_type?.key, "size-3.5 shrink-0")}
           <span className="truncate">{card.card_type?.label}</span>
         </span>
         <div className="flex shrink-0 items-center gap-2">
