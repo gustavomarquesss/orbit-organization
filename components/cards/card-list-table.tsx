@@ -124,7 +124,12 @@ export function CardListTable({
             const TypeIcon = getCardTypeIcon(card.card_type?.key);
             const recorrenciaLabel = cardRecorrenciaLabel(card.recorrencia);
             return (
-            <TableRow key={card.id} className="cursor-pointer" onClick={() => router.push(`/cards/${card.id}`)}>
+            <TableRow
+              key={card.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/cards/${card.id}`)}
+              style={card.priority?.color ? { borderLeft: `3px solid ${card.priority.color}` } : undefined}
+            >
               {selectable ? (
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox

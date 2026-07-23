@@ -7,6 +7,7 @@ import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { formatCurrencyBRL, nextRenewalDate } from "@/lib/utils/financeiro";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
+import { cn } from "@/lib/utils";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 type SelectionProps = {
@@ -48,15 +49,16 @@ function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWith
   const TypeIcon = getCardTypeIcon("financeiro");
   const details = card.financeiro_details;
   const renewal = details ? nextRenewalDate(details.data_inicio, details.recorrencia) : null;
+  const selectable = Boolean(onToggleSelect);
 
   return (
     <div className="relative">
       <SelectionCheckbox id={card.id} selected={selected} onToggleSelect={onToggleSelect} />
       <Link
         href={`/cards/${card.id}`}
-        className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:border-foreground/20 hover:bg-accent/40"
+        className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:bg-accent/40"
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className={cn("flex items-start justify-between gap-2", selectable && "pr-7")}>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <TypeIcon className="size-3.5" />
             Financeiro
@@ -107,19 +109,21 @@ export function CardTile({
   }
 
   const TypeIcon = getCardTypeIcon(card.card_type?.key);
+  const selectable = Boolean(onToggleSelect);
   return (
     <div className="relative">
       <SelectionCheckbox id={card.id} selected={selected} onToggleSelect={onToggleSelect} />
       <Link
         href={`/cards/${card.id}`}
-        className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:border-foreground/20 hover:bg-accent/40"
+        className="flex flex-col gap-3 rounded-xl border-2 bg-card p-4 text-left transition-colors hover:bg-accent/40"
+        style={{ borderColor: card.priority?.color || undefined }}
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className={cn("flex items-start justify-between gap-2", selectable && "pr-7")}>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <TypeIcon className="size-3.5" />
             {card.card_type?.label}
           </span>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             <RecorrenciaBadge recorrencia={card.recorrencia} />
             {card.status ? <StatusProgress status={card.status} allStatuses={allStatuses} /> : null}
           </div>
