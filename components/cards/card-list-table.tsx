@@ -7,7 +7,7 @@ import { CalendarClock, Repeat } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusProgress } from "@/components/cards/status-progress";
-import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
+import { renderCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
 import { getCardAccentColor } from "@/lib/utils/card-accent";
 import { formatPrazo, isPrazoVencido } from "@/lib/utils/prazo";
@@ -135,7 +135,6 @@ export function CardListTable({
         </TableHeader>
         <TableBody>
           {sorted.map((card) => {
-            const TypeIcon = getCardTypeIcon(card.card_type?.key);
             const recorrenciaLabel = cardRecorrenciaLabel(card.recorrencia);
             const accentColor = getCardAccentColor(card);
             return (
@@ -160,7 +159,7 @@ export function CardListTable({
               ) : null}
               <TableCell className="font-medium">
                 <span className="flex items-center gap-1.5">
-                  <TypeIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  {renderCardTypeIcon(card.card_type?.key, "size-3.5 shrink-0 text-muted-foreground")}
                   {card.title}
                   {recorrenciaLabel ? (
                     <span title={`Recorrência: ${recorrenciaLabel}`}>
