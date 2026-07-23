@@ -39,15 +39,11 @@ const cardFormValuesSchema = cardFormSchema.extend({
 
 export type CardFormValues = z.infer<typeof cardFormValuesSchema>;
 
-function toDefaultValues(
-  card?: CardWithRelations | null,
-  meeting?: MeetingDetails | null,
-  lockedCardTypeId?: string,
-): CardFormValues {
+function toDefaultValues(card?: CardWithRelations | null, meeting?: MeetingDetails | null): CardFormValues {
   return {
     title: card?.title ?? "",
     description: card?.description ?? "",
-    card_type_id: card?.card_type?.id ?? lockedCardTypeId ?? "",
+    card_type_id: card?.card_type?.id ?? "",
     modelo_ids: card?.card_modelos?.map((cm) => cm.modelo?.id).filter((id): id is string => Boolean(id)) ?? [],
     status_id: card?.status?.id ?? "",
     priority_id: card?.priority?.id ?? "",
@@ -68,14 +64,12 @@ export function CardForm({
   meetingDetails,
   onSuccess,
   onCancel,
-  lockedCardTypeId,
 }: {
   lookups: CardLookups;
   card?: CardWithRelations | null;
   meetingDetails?: MeetingDetails | null;
   onSuccess: () => void;
   onCancel: () => void;
-  lockedCardTypeId?: string;
 }) {
   const isEditing = Boolean(card);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -90,14 +84,12 @@ export function CardForm({
     formState: { errors, isSubmitting },
   } = useForm<CardFormValues>({
     resolver: zodResolver(cardFormValuesSchema),
-    defaultValues: toDefaultValues(card, meetingDetails, lockedCardTypeId),
+    defaultValues: toDefaultValues(card, meetingDetails),
   });
 
-  // Fora do fluxo travado (ex.: aba Financeiro), o tipo Financeiro não aparece
-  // como opção manual — só é atribuído a um card através daquela aba.
-  const visibleCardTypes = lockedCardTypeId
-    ? lookups.cardTypes.filter((t) => t.id === lockedCardTypeId)
-    : lookups.cardTypes.filter((t) => t.key !== "financeiro" || t.id === card?.card_type?.id);
+  // O tipo Financeiro tem seu próprio formulário (aba Financeiro) e nunca
+  // aparece como opção manual aqui.
+  const visibleCardTypes = lookups.cardTypes.filter((t) => t.key !== "financeiro");
 
   const selectedTypeId = watch("card_type_id");
   const isReuniao = lookups.cardTypes.find((t) => t.id === selectedTypeId)?.key === "reuniao";
@@ -156,7 +148,7 @@ export function CardForm({
           control={control}
           name="card_type_id"
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange} disabled={Boolean(lockedCardTypeId)}>
+            <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="card_type_id" className="w-full">
                 <SelectValue placeholder="Selecione...">
                   {(value: string) => {
@@ -312,6 +304,12 @@ export function CardForm({
         <Label htmlFor="observacoes">Observações</Label>
         <Textarea id="observacoes" rows={2} {...register("observacoes")} />
       </div>
+
+      {isEditing ? (
+        <p className="text-xs text-muted-foreground">
+          Criado por {card?.created_by_member?.full_name ?? "—"} · Editado por {card?.updated_by_member?.full_name ?? "—"}
+        </p>
+      ) : null}
 
       {serverError ? <p className="text-sm text-destructive">{serverError}</p> : null}
 

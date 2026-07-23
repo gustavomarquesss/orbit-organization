@@ -6,9 +6,7 @@ import { useRouter } from "next/navigation";
 import { CardFormDialog } from "@/components/cards/card-form-dialog";
 import type { CardLookups } from "@/lib/queries/cards";
 
-export type QuickAddOptions = { lockedCardTypeId?: string; title?: string };
-
-const QuickAddContext = createContext<((options?: QuickAddOptions) => void) | null>(null);
+const QuickAddContext = createContext<(() => void) | null>(null);
 
 export function useQuickAddCard() {
   const ctx = useContext(QuickAddContext);
@@ -24,12 +22,8 @@ export function CardQuickAddProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState<QuickAddOptions>({});
   const router = useRouter();
-  const openCreate = useCallback((opts?: QuickAddOptions) => {
-    setOptions(opts ?? {});
-    setOpen(true);
-  }, []);
+  const openCreate = useCallback(() => setOpen(true), []);
 
   function handleSuccess() {
     setOpen(false);
@@ -39,14 +33,7 @@ export function CardQuickAddProvider({
   return (
     <QuickAddContext.Provider value={openCreate}>
       {children}
-      <CardFormDialog
-        open={open}
-        onOpenChange={setOpen}
-        lookups={lookups}
-        onSuccess={handleSuccess}
-        lockedCardTypeId={options.lockedCardTypeId}
-        title={options.title}
-      />
+      <CardFormDialog open={open} onOpenChange={setOpen} lookups={lookups} onSuccess={handleSuccess} />
     </QuickAddContext.Provider>
   );
 }

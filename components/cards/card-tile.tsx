@@ -58,6 +58,10 @@ export function CardTile({ card, allStatuses }: { card: CardWithRelations; allSt
         <span className="truncate">{formatResponsaveis(card)}</span>
         {formatModelos(card) ? <span className="shrink-0 truncate">{formatModelos(card)}</span> : null}
       </div>
+
+      {card.created_by_member ? (
+        <p className="truncate text-[10px] text-muted-foreground/70">Criado por {card.created_by_member.full_name}</p>
+      ) : null}
     </Link>
   );
 }

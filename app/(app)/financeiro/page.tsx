@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { CardsExplorer } from "@/components/cards/cards-explorer";
+import { NovoGastoButton } from "@/components/cards/novo-gasto-button";
 import { getCardLookups, getCardsWithRelations, type CardFilters } from "@/lib/queries/cards";
 
 export default async function FinanceiroPage({
@@ -38,8 +39,7 @@ export default async function FinanceiroPage({
         cards={cards}
         lookups={scopedLookups}
         view={view}
-        newCardLabel="Novo Gasto"
-        lockedCardTypeId={financeiroId}
+        newCardSlot={financeiroId ? <NovoGastoButton lookups={lookups} financeiroTypeId={financeiroId} /> : null}
       />
     </>
   );

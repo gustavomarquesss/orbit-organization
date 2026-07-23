@@ -8,7 +8,16 @@ import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
-type SortKey = "title" | "tipo" | "status" | "prioridade" | "responsavel" | "modelo" | "updated_at";
+type SortKey =
+  | "title"
+  | "tipo"
+  | "status"
+  | "prioridade"
+  | "responsavel"
+  | "modelo"
+  | "criado_por"
+  | "editado_por"
+  | "updated_at";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "title", label: "Título" },
@@ -17,6 +26,8 @@ const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "prioridade", label: "Prioridade" },
   { key: "responsavel", label: "Responsável" },
   { key: "modelo", label: "Modelo" },
+  { key: "criado_por", label: "Criado por" },
+  { key: "editado_por", label: "Editado por" },
   { key: "updated_at", label: "Atualizado" },
 ];
 
@@ -48,6 +59,10 @@ function fieldValue(card: CardWithRelations, key: SortKey): string {
       return responsaveisLabel(card);
     case "modelo":
       return modelosLabel(card);
+    case "criado_por":
+      return card.created_by_member?.full_name ?? "";
+    case "editado_por":
+      return card.updated_by_member?.full_name ?? "";
     case "updated_at":
       return card.updated_at;
   }
@@ -106,6 +121,8 @@ export function CardListTable({
               <TableCell>{card.priority?.label}</TableCell>
               <TableCell>{responsaveisLabel(card) || "—"}</TableCell>
               <TableCell>{modelosLabel(card) || "—"}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{card.created_by_member?.full_name ?? "—"}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{card.updated_by_member?.full_name ?? "—"}</TableCell>
               <TableCell className="text-xs text-muted-foreground">
                 {new Date(card.updated_at).toLocaleDateString("pt-BR")}
               </TableCell>

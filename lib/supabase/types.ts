@@ -235,6 +235,51 @@ export type Database = {
           },
         ]
       }
+      financeiro_details: {
+        Row: {
+          card_id: string
+          created_at: string
+          data_inicio: string
+          gasto_por_id: string | null
+          recorrencia: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          data_inicio: string
+          gasto_por_id?: string | null
+          recorrencia: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          data_inicio?: string
+          gasto_por_id?: string | null
+          recorrencia?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_details_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: true
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financeiro_details_gasto_por_id_fkey"
+            columns: ["gasto_por_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_details: {
         Row: {
           assuntos: string | null

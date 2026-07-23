@@ -9,7 +9,9 @@ const CARD_SELECT = `
   priority:priorities!cards_priority_id_fkey(id, key, label, color),
   card_tags(tag:tags(id, name)),
   card_responsaveis(team_member:team_members(id, full_name, avatar_color)),
-  card_modelos(modelo:modelos(id, name))
+  card_modelos(modelo:modelos(id, name)),
+  created_by_member:team_members!cards_created_by_fkey(id, full_name),
+  updated_by_member:team_members!cards_updated_by_fkey(id, full_name)
 `;
 
 export type CardWithRelations = {
@@ -25,6 +27,8 @@ export type CardWithRelations = {
   card_tags: { tag: { id: string; name: string } | null }[];
   card_responsaveis: { team_member: { id: string; full_name: string; avatar_color: string } | null }[];
   card_modelos: { modelo: { id: string; name: string } | null }[];
+  created_by_member: { id: string; full_name: string } | null;
+  updated_by_member: { id: string; full_name: string } | null;
 };
 
 export async function getCardById(id: string): Promise<CardWithRelations | null> {

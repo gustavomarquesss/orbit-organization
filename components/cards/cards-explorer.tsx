@@ -14,17 +14,14 @@ export function CardsExplorer({
   cards,
   lookups,
   view,
-  newCardLabel = "Novo Card",
-  lockedCardTypeId,
+  newCardSlot,
 }: {
   cards: CardWithRelations[];
   lookups: CardLookups;
   view: "grid" | "list";
-  newCardLabel?: string;
-  lockedCardTypeId?: string;
+  newCardSlot?: React.ReactNode;
 }) {
   const openCreate = useQuickAddCard();
-  const handleOpenCreate = () => openCreate({ lockedCardTypeId, title: newCardLabel });
 
   return (
     <>
@@ -32,18 +29,22 @@ export function CardsExplorer({
 
       <div className="mb-4 flex items-center justify-between gap-2">
         <ViewToggle />
-        <Button size="sm" onClick={handleOpenCreate} className="gap-1.5">
-          <Plus className="size-4" />
-          {newCardLabel}
-        </Button>
+        {newCardSlot ?? (
+          <Button size="sm" onClick={openCreate} className="gap-1.5">
+            <Plus className="size-4" />
+            Novo Card
+          </Button>
+        )}
       </div>
 
       {cards.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
           <p>Nenhum card encontrado.</p>
-          <Button variant="link" onClick={handleOpenCreate}>
-            Criar um novo card
-          </Button>
+          {newCardSlot ? null : (
+            <Button variant="link" onClick={openCreate}>
+              Criar um novo card
+            </Button>
+          )}
         </div>
       ) : view === "list" ? (
         <CardListTable cards={cards} allStatuses={lookups.statuses} />
