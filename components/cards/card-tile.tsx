@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { ColorBadge } from "@/components/cards/color-badge";
+import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
-import type { CardWithRelations } from "@/lib/queries/cards";
+import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 function formatResponsaveis(card: CardWithRelations): string {
   const names = card.card_responsaveis
@@ -21,7 +21,7 @@ function formatModelos(card: CardWithRelations): string {
   return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
-export function CardTile({ card }: { card: CardWithRelations }) {
+export function CardTile({ card, allStatuses }: { card: CardWithRelations; allStatuses: CardLookups["statuses"] }) {
   const TypeIcon = getCardTypeIcon(card.card_type?.key);
   return (
     <Link
@@ -33,7 +33,7 @@ export function CardTile({ card }: { card: CardWithRelations }) {
           <TypeIcon className="size-3.5" />
           {card.card_type?.label}
         </span>
-        {card.status ? <ColorBadge label={card.status.label} color={card.status.color} /> : null}
+        {card.status ? <StatusProgress status={card.status} allStatuses={allStatuses} /> : null}
       </div>
 
       <h3 className="line-clamp-2 text-sm font-medium text-foreground">{card.title}</h3>

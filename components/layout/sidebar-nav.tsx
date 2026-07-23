@@ -5,12 +5,7 @@ import { usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { mainNavItems, settingsNavItems } from "./nav-items";
-
-function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+import { isActive, mainNavItems, settingsNavItems } from "./nav-items";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();

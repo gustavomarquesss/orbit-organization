@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { CardsExplorer } from "@/components/cards/cards-explorer";
 import { getCardLookups, getCardsWithRelations, type CardFilters } from "@/lib/queries/cards";
 
-export default async function CardsPage({
+export default async function FinanceiroPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -10,8 +10,14 @@ export default async function CardsPage({
   const sp = await searchParams;
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
 
+  const lookups = await getCardLookups();
+  const financeiroId = lookups.cardTypes.find((t) => t.key === "financeiro")?.id;
+  // A aba Financeiro só mostra cards do tipo Financeiro, então o filtro de
+  // Tipo não faz sentido aqui — restringe as opções ao próprio Financeiro.
+  const scopedLookups = { ...lookups, cardTypes: lookups.cardTypes.filter((t) => t.key === "financeiro") };
+
   const filters: CardFilters = {
-    cardTypeId: get("tipo"),
+    cardTypeId: financeiroId,
     statusId: get("status"),
     priorityId: get("prioridade"),
     responsavelId: get("responsavel"),
@@ -23,22 +29,18 @@ export default async function CardsPage({
   };
   const view = get("view") === "list" ? "list" : "grid";
 
-  const lookups = await getCardLookups();
-  const financeiroId = lookups.cardTypes.find((t) => t.key === "financeiro")?.id;
-  // Cards do tipo Financeiro são organizados só na aba Financeiro.
-  const visibleLookups = { ...lookups, cardTypes: lookups.cardTypes.filter((t) => t.key !== "financeiro") };
-
-  const cards = await getCardsWithRelations({ ...filters, excludeCardTypeId: financeiroId });
+  const cards = financeiroId ? await getCardsWithRelations(filters) : [];
 
   return (
     <>
-      <PageHeader
-        title="Cards"
-        description={
-          filters.pendente ? "Mostrando apenas cards pendentes." : "Todo o conteúdo da equipe em um único lugar."
-        }
+      <PageHeader title="Financeiro" description="Gastos organizados fora das métricas do Dashboard." />
+      <CardsExplorer
+        cards={cards}
+        lookups={scopedLookups}
+        view={view}
+        newCardLabel="Novo Gasto"
+        lockedCardTypeId={financeiroId}
       />
-      <CardsExplorer cards={cards} lookups={visibleLookups} view={view} />
     </>
   );
 }

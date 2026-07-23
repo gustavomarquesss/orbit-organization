@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Logo } from "@/components/brand/logo";
 import { SidebarNav } from "./sidebar-nav";
 
 export function MobileNav() {
@@ -17,7 +18,9 @@ export function MobileNav() {
         <span className="sr-only">Abrir menu</span>
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
-        <SheetTitle className="px-4 pt-4">Painel Interno</SheetTitle>
+        <SheetTitle className="px-4 pt-4">
+          <Logo />
+        </SheetTitle>
         <div className="px-3 pb-4">
           <SidebarNav onNavigate={() => setOpen(false)} />
         </div>

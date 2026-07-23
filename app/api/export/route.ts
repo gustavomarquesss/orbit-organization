@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-import { getCardsWithRelations } from "@/lib/queries/cards";
+import { getCardLookups, getCardsWithRelations } from "@/lib/queries/cards";
 import {
   getDashboardStats,
   getOpenCountByModelo,
@@ -9,8 +9,11 @@ import {
 } from "@/lib/queries/dashboard";
 
 export async function GET() {
+  const lookups = await getCardLookups();
+  const financeiroId = lookups.cardTypes.find((t) => t.key === "financeiro")?.id;
+
   const [cards, stats, byModelo, byResponsavel, recentCompletions] = await Promise.all([
-    getCardsWithRelations(),
+    getCardsWithRelations({ excludeCardTypeId: financeiroId }),
     getDashboardStats(),
     getOpenCountByModelo(9999),
     getOpenCountByResponsavel(9999),

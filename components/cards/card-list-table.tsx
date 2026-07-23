@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ColorBadge } from "@/components/cards/color-badge";
+import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
-import type { CardWithRelations } from "@/lib/queries/cards";
+import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 type SortKey = "title" | "tipo" | "status" | "prioridade" | "responsavel" | "modelo" | "updated_at";
 
@@ -53,7 +53,13 @@ function fieldValue(card: CardWithRelations, key: SortKey): string {
   }
 }
 
-export function CardListTable({ cards }: { cards: CardWithRelations[] }) {
+export function CardListTable({
+  cards,
+  allStatuses,
+}: {
+  cards: CardWithRelations[];
+  allStatuses: CardLookups["statuses"];
+}) {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("updated_at");
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
@@ -95,7 +101,7 @@ export function CardListTable({ cards }: { cards: CardWithRelations[] }) {
               </TableCell>
               <TableCell>{card.card_type?.label}</TableCell>
               <TableCell>
-                {card.status ? <ColorBadge label={card.status.label} color={card.status.color} /> : null}
+                {card.status ? <StatusProgress status={card.status} allStatuses={allStatuses} /> : null}
               </TableCell>
               <TableCell>{card.priority?.label}</TableCell>
               <TableCell>{responsaveisLabel(card) || "—"}</TableCell>

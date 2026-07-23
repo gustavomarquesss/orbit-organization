@@ -39,11 +39,15 @@ const cardFormValuesSchema = cardFormSchema.extend({
 
 export type CardFormValues = z.infer<typeof cardFormValuesSchema>;
 
-function toDefaultValues(card?: CardWithRelations | null, meeting?: MeetingDetails | null): CardFormValues {
+function toDefaultValues(
+  card?: CardWithRelations | null,
+  meeting?: MeetingDetails | null,
+  lockedCardTypeId?: string,
+): CardFormValues {
   return {
     title: card?.title ?? "",
     description: card?.description ?? "",
-    card_type_id: card?.card_type?.id ?? "",
+    card_type_id: card?.card_type?.id ?? lockedCardTypeId ?? "",
     modelo_ids: card?.card_modelos?.map((cm) => cm.modelo?.id).filter((id): id is string => Boolean(id)) ?? [],
     status_id: card?.status?.id ?? "",
     priority_id: card?.priority?.id ?? "",
@@ -64,12 +68,14 @@ export function CardForm({
   meetingDetails,
   onSuccess,
   onCancel,
+  lockedCardTypeId,
 }: {
   lookups: CardLookups;
   card?: CardWithRelations | null;
   meetingDetails?: MeetingDetails | null;
   onSuccess: () => void;
   onCancel: () => void;
+  lockedCardTypeId?: string;
 }) {
   const isEditing = Boolean(card);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -84,8 +90,14 @@ export function CardForm({
     formState: { errors, isSubmitting },
   } = useForm<CardFormValues>({
     resolver: zodResolver(cardFormValuesSchema),
-    defaultValues: toDefaultValues(card, meetingDetails),
+    defaultValues: toDefaultValues(card, meetingDetails, lockedCardTypeId),
   });
+
+  // Fora do fluxo travado (ex.: aba Financeiro), o tipo Financeiro não aparece
+  // como opção manual — só é atribuído a um card através daquela aba.
+  const visibleCardTypes = lockedCardTypeId
+    ? lookups.cardTypes.filter((t) => t.id === lockedCardTypeId)
+    : lookups.cardTypes.filter((t) => t.key !== "financeiro" || t.id === card?.card_type?.id);
 
   const selectedTypeId = watch("card_type_id");
   const isReuniao = lookups.cardTypes.find((t) => t.id === selectedTypeId)?.key === "reuniao";
@@ -144,7 +156,7 @@ export function CardForm({
           control={control}
           name="card_type_id"
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value} onValueChange={field.onChange} disabled={Boolean(lockedCardTypeId)}>
               <SelectTrigger id="card_type_id" className="w-full">
                 <SelectValue placeholder="Selecione...">
                   {(value: string) => {
@@ -161,7 +173,7 @@ export function CardForm({
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {lookups.cardTypes.map((type) => {
+                {visibleCardTypes.map((type) => {
                   const Icon = getCardTypeIcon(type.key);
                   return (
                     <SelectItem key={type.id} value={type.id}>

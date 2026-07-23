@@ -1,4 +1,4 @@
-import { Video, Image, Filter, Search, BookOpen, CalendarClock, NotebookPen, Mic, Tag, type LucideIcon } from "lucide-react";
+import { Video, Image, Filter, Search, BookOpen, CalendarClock, NotebookPen, Mic, Wallet, Tag, type LucideIcon } from "lucide-react";
 
 const CARD_TYPE_ICONS: Record<string, LucideIcon> = {
   video: Video,
@@ -9,6 +9,7 @@ const CARD_TYPE_ICONS: Record<string, LucideIcon> = {
   reuniao: CalendarClock,
   anotacao: NotebookPen,
   podcast: Mic,
+  financeiro: Wallet,
 };
 
 export function getCardTypeIcon(key?: string | null): LucideIcon {

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Painel Interno",
-  description: "Painel interno da equipe",
+  title: "Orbit",
+  description: "Hub interno de operações da equipe",
 };
 
 export default function RootLayout({

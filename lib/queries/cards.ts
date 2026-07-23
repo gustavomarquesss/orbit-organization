@@ -37,6 +37,7 @@ export async function getCardById(id: string): Promise<CardWithRelations | null>
 
 export type CardFilters = {
   cardTypeId?: string;
+  excludeCardTypeId?: string;
   statusId?: string;
   priorityId?: string;
   responsavelId?: string;
@@ -86,6 +87,7 @@ export async function getCardsWithRelations(filters: CardFilters = {}): Promise<
   let query = supabase.from("cards").select(CARD_SELECT).order("updated_at", { ascending: false });
 
   if (filters.cardTypeId) query = query.eq("card_type_id", filters.cardTypeId);
+  if (filters.excludeCardTypeId) query = query.neq("card_type_id", filters.excludeCardTypeId);
   if (filters.statusId) query = query.eq("status_id", filters.statusId);
   if (filters.priorityId) query = query.eq("priority_id", filters.priorityId);
   if (filters.from) query = query.gte("created_at", filters.from);

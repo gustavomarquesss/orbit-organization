@@ -7,6 +7,13 @@ async function getExcludedStatusIds(supabase: SupabaseServerClient): Promise<str
   return (data ?? []).map((s) => s.id);
 }
 
+// Cards do tipo Financeiro são organizados só na aba Financeiro: nunca contam
+// nem aparecem nas métricas/listas do Dashboard.
+async function getFinanceiroTypeId(supabase: SupabaseServerClient): Promise<string | undefined> {
+  const { data } = await supabase.from("card_types").select("id").eq("key", "financeiro").maybeSingle();
+  return data?.id;
+}
+
 export type DashboardStats = {
   total: number;
   pendentes: number;
@@ -17,29 +24,42 @@ export type DashboardStats = {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
 
-  const [{ data: statuses }, { data: priorities }] = await Promise.all([
+  const [{ data: statuses }, { data: priorities }, financeiroId] = await Promise.all([
     supabase.from("statuses").select("id, key"),
     supabase.from("priorities").select("id, key"),
+    getFinanceiroTypeId(supabase),
   ]);
 
   const concluidoId = statuses?.find((s) => s.key === "concluido")?.id;
   const arquivadoId = statuses?.find((s) => s.key === "arquivado")?.id;
   const urgenteId = priorities?.find((p) => p.key === "urgente")?.id;
 
+  let totalQuery = supabase.from("cards").select("*", { count: "exact", head: true });
+  let concluidosQuery = concluidoId
+    ? supabase.from("cards").select("*", { count: "exact", head: true }).eq("status_id", concluidoId)
+    : null;
+  let urgentesQuery = urgenteId
+    ? supabase.from("cards").select("*", { count: "exact", head: true }).eq("priority_id", urgenteId)
+    : null;
+  if (financeiroId) {
+    totalQuery = totalQuery.neq("card_type_id", financeiroId);
+    concluidosQuery = concluidosQuery?.neq("card_type_id", financeiroId) ?? null;
+    urgentesQuery = urgentesQuery?.neq("card_type_id", financeiroId) ?? null;
+  }
+
   const [{ count: total }, { count: concluidos }, { count: urgentes }] = await Promise.all([
-    supabase.from("cards").select("*", { count: "exact", head: true }),
-    concluidoId
-      ? supabase.from("cards").select("*", { count: "exact", head: true }).eq("status_id", concluidoId)
-      : Promise.resolve({ count: 0 }),
-    urgenteId
-      ? supabase.from("cards").select("*", { count: "exact", head: true }).eq("priority_id", urgenteId)
-      : Promise.resolve({ count: 0 }),
+    totalQuery,
+    concluidosQuery ?? Promise.resolve({ count: 0 }),
+    urgentesQuery ?? Promise.resolve({ count: 0 }),
   ]);
 
   const excludeIds = [concluidoId, arquivadoId].filter((id): id is string => Boolean(id));
   let pendentesQuery = supabase.from("cards").select("*", { count: "exact", head: true });
   if (excludeIds.length > 0) {
     pendentesQuery = pendentesQuery.not("status_id", "in", `(${excludeIds.join(",")})`);
+  }
+  if (financeiroId) {
+    pendentesQuery = pendentesQuery.neq("card_type_id", financeiroId);
   }
   const { count: pendentes } = await pendentesQuery;
 
@@ -60,12 +80,16 @@ export type RecentCard = {
 
 export async function getRecentCards(limit = 5): Promise<RecentCard[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const financeiroId = await getFinanceiroTypeId(supabase);
+
+  let query = supabase
     .from("cards")
     .select("id, title, created_at, card_type:card_types!cards_card_type_id_fkey(key, emoji)")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (financeiroId) query = query.neq("card_type_id", financeiroId);
 
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -77,12 +101,16 @@ export async function getRecentCards(limit = 5): Promise<RecentCard[]> {
 
 export async function getRecentlyUpdatedCards(limit = 5): Promise<RecentCard[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const financeiroId = await getFinanceiroTypeId(supabase);
+
+  let query = supabase
     .from("cards")
     .select("id, title, updated_at, card_type:card_types!cards_card_type_id_fkey(key, emoji)")
     .order("updated_at", { ascending: false })
     .limit(limit);
+  if (financeiroId) query = query.neq("card_type_id", financeiroId);
 
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -135,10 +163,14 @@ function aggregateCounts<T>(rows: T[], keyOf: (row: T) => string, labelOf: (row:
 
 export async function getOpenCountByModelo(limit = 5): Promise<BreakdownItem[]> {
   const supabase = await createClient();
-  const excludedIds = await getExcludedStatusIds(supabase);
+  const [excludedIds, financeiroId] = await Promise.all([
+    getExcludedStatusIds(supabase),
+    getFinanceiroTypeId(supabase),
+  ]);
 
   let openCardsQuery = supabase.from("cards").select("id");
   if (excludedIds.length > 0) openCardsQuery = openCardsQuery.not("status_id", "in", `(${excludedIds.join(",")})`);
+  if (financeiroId) openCardsQuery = openCardsQuery.neq("card_type_id", financeiroId);
   const { data: openCards } = await openCardsQuery;
   const openIds = (openCards ?? []).map((c) => c.id);
   if (openIds.length === 0) return [];
@@ -159,10 +191,14 @@ export async function getOpenCountByModelo(limit = 5): Promise<BreakdownItem[]> 
 
 export async function getOpenCountByResponsavel(limit = 5): Promise<BreakdownItem[]> {
   const supabase = await createClient();
-  const excludedIds = await getExcludedStatusIds(supabase);
+  const [excludedIds, financeiroId] = await Promise.all([
+    getExcludedStatusIds(supabase),
+    getFinanceiroTypeId(supabase),
+  ]);
 
   let openCardsQuery = supabase.from("cards").select("id");
   if (excludedIds.length > 0) openCardsQuery = openCardsQuery.not("status_id", "in", `(${excludedIds.join(",")})`);
+  if (financeiroId) openCardsQuery = openCardsQuery.neq("card_type_id", financeiroId);
   const { data: openCards } = await openCardsQuery;
   const openIds = (openCards ?? []).map((c) => c.id);
   if (openIds.length === 0) return [];
@@ -185,10 +221,14 @@ export type StaleCard = { id: string; title: string; updatedAt: string };
 
 export async function getStaleCards(limit = 5): Promise<StaleCard[]> {
   const supabase = await createClient();
-  const excludedIds = await getExcludedStatusIds(supabase);
+  const [excludedIds, financeiroId] = await Promise.all([
+    getExcludedStatusIds(supabase),
+    getFinanceiroTypeId(supabase),
+  ]);
 
   let query = supabase.from("cards").select("id, title, updated_at").order("updated_at", { ascending: true }).limit(limit);
   if (excludedIds.length > 0) query = query.not("status_id", "in", `(${excludedIds.join(",")})`);
+  if (financeiroId) query = query.neq("card_type_id", financeiroId);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -198,15 +238,20 @@ export async function getStaleCards(limit = 5): Promise<StaleCard[]> {
 
 export async function getRecentCompletionsCount(days = 7): Promise<number> {
   const supabase = await createClient();
-  const { data: status } = await supabase.from("statuses").select("id").eq("key", "concluido").maybeSingle();
+  const [{ data: status }, financeiroId] = await Promise.all([
+    supabase.from("statuses").select("id").eq("key", "concluido").maybeSingle(),
+    getFinanceiroTypeId(supabase),
+  ]);
   if (!status) return 0;
 
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await supabase
+  let query = supabase
     .from("cards")
     .select("*", { count: "exact", head: true })
     .eq("status_id", status.id)
     .gte("updated_at", since);
+  if (financeiroId) query = query.neq("card_type_id", financeiroId);
 
+  const { count } = await query;
   return count ?? 0;
 }

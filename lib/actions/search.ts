@@ -115,5 +115,8 @@ export async function searchCards(query: string): Promise<SearchResult[]> {
     }
   }
 
-  return Array.from(results.values()).slice(0, 20);
+  // Cards do tipo Financeiro só aparecem na aba Financeiro, nunca na busca global.
+  return Array.from(results.values())
+    .filter((r) => r.typeKey !== "financeiro")
+    .slice(0, 20);
 }
