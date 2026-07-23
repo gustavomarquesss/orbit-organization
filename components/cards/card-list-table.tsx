@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Repeat } from "lucide-react";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
+import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 type SortKey =
@@ -71,9 +74,15 @@ function fieldValue(card: CardWithRelations, key: SortKey): string {
 export function CardListTable({
   cards,
   allStatuses,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: {
   cards: CardWithRelations[];
   allStatuses: CardLookups["statuses"];
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: (ids: string[]) => void;
 }) {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("updated_at");
@@ -89,12 +98,19 @@ export function CardListTable({
   }
 
   const sorted = [...cards].sort((a, b) => fieldValue(a, sortKey).localeCompare(fieldValue(b, sortKey)) * sortDir);
+  const selectable = Boolean(onToggleSelect);
+  const allSelected = Boolean(selectedIds) && sorted.length > 0 && sorted.every((c) => selectedIds!.has(c.id));
 
   return (
     <div className="overflow-x-auto rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
+            {selectable ? (
+              <TableHead className="w-8">
+                <Checkbox checked={allSelected} onCheckedChange={() => onToggleSelectAll?.(sorted.map((c) => c.id))} />
+              </TableHead>
+            ) : null}
             {COLUMNS.map((col) => (
               <TableHead key={col.key} className="cursor-pointer select-none" onClick={() => sortBy(col.key)}>
                 {col.label}
@@ -106,12 +122,26 @@ export function CardListTable({
         <TableBody>
           {sorted.map((card) => {
             const TypeIcon = getCardTypeIcon(card.card_type?.key);
+            const recorrenciaLabel = cardRecorrenciaLabel(card.recorrencia);
             return (
             <TableRow key={card.id} className="cursor-pointer" onClick={() => router.push(`/cards/${card.id}`)}>
+              {selectable ? (
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds?.has(card.id) ?? false}
+                    onCheckedChange={() => onToggleSelect?.(card.id)}
+                  />
+                </TableCell>
+              ) : null}
               <TableCell className="font-medium">
                 <span className="flex items-center gap-1.5">
                   <TypeIcon className="size-3.5 shrink-0 text-muted-foreground" />
                   {card.title}
+                  {recorrenciaLabel ? (
+                    <span title={`Recorrência: ${recorrenciaLabel}`}>
+                      <Repeat className="size-3 shrink-0 text-muted-foreground" />
+                    </span>
+                  ) : null}
                 </span>
               </TableCell>
               <TableCell>{card.card_type?.label}</TableCell>

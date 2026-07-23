@@ -3,7 +3,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 const CARD_SELECT = `
-  id, title, description, observacoes, created_at, updated_at,
+  id, title, description, observacoes, created_at, updated_at, recorrencia,
   card_type:card_types!cards_card_type_id_fkey(id, key, label, emoji),
   status:statuses!cards_status_id_fkey(id, key, label, color),
   priority:priorities!cards_priority_id_fkey(id, key, label, color),
@@ -25,6 +25,7 @@ export type CardWithRelations = {
   observacoes: string | null;
   created_at: string;
   updated_at: string;
+  recorrencia: string | null;
   card_type: { id: string; key: string; label: string; emoji: string } | null;
   status: { id: string; key: string; label: string; color: string } | null;
   priority: { id: string; key: string; label: string; color: string } | null;

@@ -20,7 +20,8 @@ import { TagInput, type TagOption } from "@/components/cards/tag-input";
 import { MeetingFields } from "@/components/cards/meeting-fields";
 import { MultiSelectChips } from "@/components/cards/multi-select-chips";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
-import { createCard, deleteCard, updateCard } from "@/lib/actions/cards";
+import { CARD_RECORRENCIA_OPTIONS } from "@/lib/utils/recorrencia";
+import { createCard, deleteCard, duplicateCard, updateCard } from "@/lib/actions/cards";
 import { deleteMeetingDetails, upsertMeetingDetails } from "@/lib/actions/meetings";
 import { cardFormSchema } from "@/lib/validations/card";
 import { meetingFieldsSchema } from "@/lib/validations/meeting";
@@ -51,6 +52,7 @@ function toDefaultValues(card?: CardWithRelations | null, meeting?: MeetingDetai
       card?.card_responsaveis?.map((cr) => cr.team_member?.id).filter((id): id is string => Boolean(id)) ?? [],
     observacoes: card?.observacoes ?? "",
     tag_ids: card?.card_tags?.map((ct) => ct.tag?.id).filter((id): id is string => Boolean(id)) ?? [],
+    recorrencia: (card?.recorrencia as CardFormValues["recorrencia"]) ?? "",
     meeting_date: meeting?.meeting_date ?? "",
     meeting_time: meeting?.meeting_time ?? "",
     assuntos: meeting?.assuntos ?? "",
@@ -75,6 +77,7 @@ export function CardForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [tagOptions, setTagOptions] = useState<TagOption[]>(lookups.tags);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const {
     register,
@@ -133,6 +136,18 @@ export function CardForm({
     setIsDeleting(true);
     const result = await deleteCard(card.id);
     setIsDeleting(false);
+    if (result.error) {
+      setServerError(result.error);
+      return;
+    }
+    onSuccess();
+  }
+
+  async function handleDuplicate() {
+    if (!card) return;
+    setIsDuplicating(true);
+    const result = await duplicateCard(card.id);
+    setIsDuplicating(false);
     if (result.error) {
       setServerError(result.error);
       return;
@@ -285,6 +300,36 @@ export function CardForm({
       </div>
 
       <div className="space-y-1.5">
+        <Label htmlFor="recorrencia">Recorrência</Label>
+        <Controller
+          control={control}
+          name="recorrencia"
+          render={({ field }) => (
+            <Select value={field.value || "none"} onValueChange={(v) => field.onChange(v === "none" ? "" : v)}>
+              <SelectTrigger id="recorrencia" className="w-full">
+                <SelectValue placeholder="Nenhuma">
+                  {(value: string) =>
+                    CARD_RECORRENCIA_OPTIONS.find((o) => o.value === value)?.label ?? "Nenhuma"
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhuma</SelectItem>
+                {CARD_RECORRENCIA_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <p className="text-xs text-muted-foreground">
+          Ao concluir um card recorrente, um novo já é criado automaticamente para o próximo ciclo.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
         <Label>Tags</Label>
         <Controller
           control={control}
@@ -315,15 +360,26 @@ export function CardForm({
 
       <div className="flex items-center justify-between gap-2 pt-2">
         {isEditing ? (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isDeleting || isSubmitting}
-          >
-            {isDeleting ? "Excluindo..." : "Excluir"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting || isSubmitting || isDuplicating}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDuplicate}
+              disabled={isDeleting || isSubmitting || isDuplicating}
+            >
+              {isDuplicating ? "Duplicando..." : "Duplicar"}
+            </Button>
+          </div>
         ) : (
           <span />
         )}

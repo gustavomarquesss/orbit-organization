@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createCard, deleteCard, updateCard } from "@/lib/actions/cards";
+import { createCard, deleteCard, duplicateCard, updateCard } from "@/lib/actions/cards";
 import { upsertFinanceiroDetails } from "@/lib/actions/financeiro";
 import { financeiroFieldsSchema, RECORRENCIA_OPTIONS } from "@/lib/validations/financeiro";
 import type { CardFormInput } from "@/lib/validations/card";
@@ -52,6 +52,7 @@ export function FinanceiroForm({
   const isEditing = Boolean(card);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const {
     register,
@@ -104,6 +105,18 @@ export function FinanceiroForm({
     setIsDeleting(true);
     const result = await deleteCard(card.id);
     setIsDeleting(false);
+    if (result.error) {
+      setServerError(result.error);
+      return;
+    }
+    onSuccess();
+  }
+
+  async function handleDuplicate() {
+    if (!card) return;
+    setIsDuplicating(true);
+    const result = await duplicateCard(card.id);
+    setIsDuplicating(false);
     if (result.error) {
       setServerError(result.error);
       return;
@@ -197,15 +210,26 @@ export function FinanceiroForm({
 
       <div className="flex items-center justify-between gap-2 pt-2">
         {isEditing ? (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isDeleting || isSubmitting}
-          >
-            {isDeleting ? "Excluindo..." : "Excluir"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting || isSubmitting || isDuplicating}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDuplicate}
+              disabled={isDeleting || isSubmitting || isDuplicating}
+            >
+              {isDuplicating ? "Duplicando..." : "Duplicar"}
+            </Button>
+          </div>
         ) : (
           <span />
         )}

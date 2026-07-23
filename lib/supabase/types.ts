@@ -163,6 +163,7 @@ export type Database = {
           id: string
           observacoes: string | null
           priority_id: string
+          recorrencia: string | null
           search_vector: unknown
           status_id: string
           title: string
@@ -177,6 +178,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           priority_id: string
+          recorrencia?: string | null
           search_vector?: unknown
           status_id: string
           title: string
@@ -191,6 +193,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           priority_id?: string
+          recorrencia?: string | null
           search_vector?: unknown
           status_id?: string
           title?: string
