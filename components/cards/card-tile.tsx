@@ -3,7 +3,38 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
+import { formatCurrencyBRL, nextRenewalDate } from "@/lib/utils/financeiro";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
+
+function FinanceiroCardTile({ card }: { card: CardWithRelations }) {
+  const TypeIcon = getCardTypeIcon("financeiro");
+  const details = card.financeiro_details;
+  const renewal = details ? nextRenewalDate(details.data_inicio, details.recorrencia) : null;
+
+  return (
+    <Link
+      href={`/cards/${card.id}`}
+      className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:border-foreground/20 hover:bg-accent/40"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <TypeIcon className="size-3.5" />
+          Financeiro
+        </span>
+        {details ? (
+          <span className="text-sm font-semibold text-foreground">{formatCurrencyBRL(details.valor)}</span>
+        ) : null}
+      </div>
+
+      <h3 className="line-clamp-2 text-sm font-medium text-foreground">{card.title}</h3>
+
+      <div className="mt-auto flex flex-col gap-1 text-[11px] text-muted-foreground">
+        <span>{renewal ? `Renova em ${renewal.toLocaleDateString("pt-BR")}` : "Pagamento único"}</span>
+        <span>Assinado por {details?.gasto_por?.full_name ?? "—"}</span>
+      </div>
+    </Link>
+  );
+}
 
 function formatResponsaveis(card: CardWithRelations): string {
   const names = card.card_responsaveis
@@ -22,6 +53,10 @@ function formatModelos(card: CardWithRelations): string {
 }
 
 export function CardTile({ card, allStatuses }: { card: CardWithRelations; allStatuses: CardLookups["statuses"] }) {
+  if (card.card_type?.key === "financeiro") {
+    return <FinanceiroCardTile card={card} />;
+  }
+
   const TypeIcon = getCardTypeIcon(card.card_type?.key);
   return (
     <Link

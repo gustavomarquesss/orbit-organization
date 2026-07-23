@@ -11,7 +11,11 @@ const CARD_SELECT = `
   card_responsaveis(team_member:team_members(id, full_name, avatar_color)),
   card_modelos(modelo:modelos(id, name)),
   created_by_member:team_members!cards_created_by_fkey(id, full_name),
-  updated_by_member:team_members!cards_updated_by_fkey(id, full_name)
+  updated_by_member:team_members!cards_updated_by_fkey(id, full_name),
+  financeiro_details(
+    valor, data_inicio, recorrencia,
+    gasto_por:team_members!financeiro_details_gasto_por_id_fkey(id, full_name)
+  )
 `;
 
 export type CardWithRelations = {
@@ -29,6 +33,12 @@ export type CardWithRelations = {
   card_modelos: { modelo: { id: string; name: string } | null }[];
   created_by_member: { id: string; full_name: string } | null;
   updated_by_member: { id: string; full_name: string } | null;
+  financeiro_details: {
+    valor: number;
+    data_inicio: string;
+    recorrencia: string;
+    gasto_por: { id: string; full_name: string } | null;
+  } | null;
 };
 
 export async function getCardById(id: string): Promise<CardWithRelations | null> {
