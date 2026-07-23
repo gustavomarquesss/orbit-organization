@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
+import { getCardAccentColor } from "@/lib/utils/card-accent";
+import { sinkConcluido } from "@/lib/utils/card-sort";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 type SortKey =
@@ -97,7 +99,9 @@ export function CardListTable({
     }
   }
 
-  const sorted = [...cards].sort((a, b) => fieldValue(a, sortKey).localeCompare(fieldValue(b, sortKey)) * sortDir);
+  const sorted = sinkConcluido(
+    [...cards].sort((a, b) => fieldValue(a, sortKey).localeCompare(fieldValue(b, sortKey)) * sortDir),
+  );
   const selectable = Boolean(onToggleSelect);
   const allSelected = Boolean(selectedIds) && sorted.length > 0 && sorted.every((c) => selectedIds!.has(c.id));
 
@@ -128,12 +132,13 @@ export function CardListTable({
           {sorted.map((card) => {
             const TypeIcon = getCardTypeIcon(card.card_type?.key);
             const recorrenciaLabel = cardRecorrenciaLabel(card.recorrencia);
+            const accentColor = getCardAccentColor(card);
             return (
             <TableRow
               key={card.id}
               className="cursor-pointer"
               onClick={() => router.push(`/cards/${card.id}`)}
-              style={card.priority?.color ? { borderLeft: `3px solid ${card.priority.color}` } : undefined}
+              style={accentColor ? { borderLeft: `3px solid ${accentColor}` } : undefined}
             >
               {selectable ? (
                 <TableCell

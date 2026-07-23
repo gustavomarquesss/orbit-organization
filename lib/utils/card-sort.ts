@@ -12,6 +12,14 @@ function firstResponsavelName(card: CardWithRelations): string {
   return card.card_responsaveis[0]?.team_member?.full_name ?? "";
 }
 
+// Cards concluídos sempre afundam para o final da lista, mantendo a ordenação
+// escolhida dentro de cada grupo (não-concluídos primeiro, concluídos depois).
+export function sinkConcluido(cards: CardWithRelations[]): CardWithRelations[] {
+  const pending = cards.filter((c) => c.status?.key !== "concluido");
+  const done = cards.filter((c) => c.status?.key === "concluido");
+  return [...pending, ...done];
+}
+
 export function sortCards(
   cards: CardWithRelations[],
   sortKey: string | undefined,
@@ -38,5 +46,5 @@ export function sortCards(
       sorted.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   }
 
-  return sorted;
+  return sinkConcluido(sorted);
 }

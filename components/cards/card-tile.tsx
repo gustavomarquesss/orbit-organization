@@ -7,6 +7,7 @@ import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { formatCurrencyBRL, nextRenewalDate } from "@/lib/utils/financeiro";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
+import { getCardAccentColor } from "@/lib/utils/card-accent";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 type SelectionProps = {
@@ -113,16 +114,16 @@ export function CardTile({
   }
 
   const TypeIcon = getCardTypeIcon(card.card_type?.key);
-  const priorityColor = card.priority?.color;
+  const accentColor = getCardAccentColor(card);
   return (
     <Link
       href={`/cards/${card.id}`}
       className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-left transition-shadow hover:bg-accent/40"
       style={
-        priorityColor
+        accentColor
           ? {
-              borderColor: priorityColor,
-              boxShadow: `0 4px 16px -6px ${priorityColor}66, 0 0 0 1px ${priorityColor}1a`,
+              borderColor: accentColor,
+              boxShadow: `0 4px 16px -6px ${accentColor}66, 0 0 0 1px ${accentColor}1a`,
             }
           : undefined
       }
