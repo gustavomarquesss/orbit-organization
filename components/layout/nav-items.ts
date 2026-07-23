@@ -14,6 +14,7 @@ export const settingsNavItems = [
   { href: "/configuracoes/modelos", label: "Modelos" },
   { href: "/configuracoes/equipe", label: "Equipe" },
   { href: "/configuracoes/tags", label: "Tags" },
+  { href: "/configuracoes/notificacoes", label: "Notificações" },
 ];
 
 export function isActive(pathname: string, href: string) {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Repeat } from "lucide-react";
+import { CalendarClock, Repeat } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,6 +8,7 @@ import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { formatCurrencyBRL, nextRenewalDate } from "@/lib/utils/financeiro";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
 import { getCardAccentColor } from "@/lib/utils/card-accent";
+import { formatPrazo, isPrazoVencido } from "@/lib/utils/prazo";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 type SelectionProps = {
@@ -46,6 +47,21 @@ function RecorrenciaBadge({ recorrencia }: { recorrencia: string | null }) {
       title={`Recorrência: ${label}`}
     >
       <Repeat className="size-3" />
+      {label}
+    </span>
+  );
+}
+
+function PrazoBadge({ card }: { card: CardWithRelations }) {
+  const label = formatPrazo(card);
+  if (!label) return null;
+  const overdue = isPrazoVencido(card);
+  return (
+    <span
+      className={`flex shrink-0 items-center gap-1 text-[10px] ${overdue ? "font-medium text-destructive" : "text-muted-foreground"}`}
+      title={`Prazo: ${label}`}
+    >
+      <CalendarClock className="size-3" />
       {label}
     </span>
   );
@@ -162,6 +178,8 @@ export function CardTile({
         <span className="truncate">{formatResponsaveis(card)}</span>
         {formatModelos(card) ? <span className="shrink-0 truncate">{formatModelos(card)}</span> : null}
       </div>
+
+      <PrazoBadge card={card} />
 
       {card.created_by_member ? (
         <p className="truncate text-[10px] text-muted-foreground/70">Criado por {card.created_by_member.full_name}</p>

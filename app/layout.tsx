@@ -18,6 +18,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Orbit",
   description: "Hub interno de operações da equipe",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Orbit",
+  },
 };
 
 export default function RootLayout({

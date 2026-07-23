@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Repeat } from "lucide-react";
+import { CalendarClock, Repeat } from "lucide-react";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,6 +10,7 @@ import { StatusProgress } from "@/components/cards/status-progress";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
 import { getCardAccentColor } from "@/lib/utils/card-accent";
+import { formatPrazo, isPrazoVencido } from "@/lib/utils/prazo";
 import { sinkConcluido } from "@/lib/utils/card-sort";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
@@ -20,6 +21,7 @@ type SortKey =
   | "prioridade"
   | "responsavel"
   | "modelo"
+  | "prazo"
   | "criado_por"
   | "editado_por"
   | "updated_at";
@@ -31,6 +33,7 @@ const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "prioridade", label: "Prioridade" },
   { key: "responsavel", label: "Responsável" },
   { key: "modelo", label: "Modelo" },
+  { key: "prazo", label: "Prazo" },
   { key: "criado_por", label: "Criado por" },
   { key: "editado_por", label: "Editado por" },
   { key: "updated_at", label: "Atualizado" },
@@ -64,6 +67,8 @@ function fieldValue(card: CardWithRelations, key: SortKey): string {
       return responsaveisLabel(card);
     case "modelo":
       return modelosLabel(card);
+    case "prazo":
+      return card.prazo_data ? `${card.prazo_data} ${card.prazo_hora ?? ""}` : "";
     case "criado_por":
       return card.created_by_member?.full_name ?? "";
     case "editado_por":
@@ -171,6 +176,18 @@ export function CardListTable({
               <TableCell>{card.priority?.label}</TableCell>
               <TableCell>{responsaveisLabel(card) || "—"}</TableCell>
               <TableCell>{modelosLabel(card) || "—"}</TableCell>
+              <TableCell
+                className={`text-xs ${isPrazoVencido(card) ? "font-medium text-destructive" : "text-muted-foreground"}`}
+              >
+                {formatPrazo(card) ? (
+                  <span className="flex items-center gap-1">
+                    <CalendarClock className="size-3 shrink-0" />
+                    {formatPrazo(card)}
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </TableCell>
               <TableCell className="text-xs text-muted-foreground">{card.created_by_member?.full_name ?? "—"}</TableCell>
               <TableCell className="text-xs text-muted-foreground">{card.updated_by_member?.full_name ?? "—"}</TableCell>
               <TableCell className="text-xs text-muted-foreground">

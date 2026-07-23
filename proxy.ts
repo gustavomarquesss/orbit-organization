@@ -7,5 +7,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // api/notifications/check é chamado pelo pg_cron com um Bearer token próprio
+  // (NOTIFICATIONS_CRON_SECRET), nunca com sessão de usuário — não deve ser
+  // redirecionado para /login.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/notifications|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

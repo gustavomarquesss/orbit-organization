@@ -53,6 +53,8 @@ function toDefaultValues(card?: CardWithRelations | null, meeting?: MeetingDetai
     observacoes: card?.observacoes ?? "",
     tag_ids: card?.card_tags?.map((ct) => ct.tag?.id).filter((id): id is string => Boolean(id)) ?? [],
     recorrencia: (card?.recorrencia as CardFormValues["recorrencia"]) ?? "",
+    prazo_data: card?.prazo_data ?? "",
+    prazo_hora: card?.prazo_hora ?? "",
     meeting_date: meeting?.meeting_date ?? "",
     meeting_time: meeting?.meeting_time ?? "",
     assuntos: meeting?.assuntos ?? "",
@@ -328,6 +330,20 @@ export function CardForm({
           Ao concluir um card recorrente, um novo já é criado automaticamente para o próximo ciclo.
         </p>
       </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="prazo_data">Prazo</Label>
+          <Input id="prazo_data" type="date" {...register("prazo_data")} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="prazo_hora">Hora do prazo</Label>
+          <Input id="prazo_hora" type="time" {...register("prazo_hora")} />
+        </div>
+      </div>
+      <p className="-mt-2 text-xs text-muted-foreground">
+        Se definido, os responsáveis recebem um lembrete por notificação próximo do prazo.
+      </p>
 
       <div className="space-y-1.5">
         <Label>Tags</Label>

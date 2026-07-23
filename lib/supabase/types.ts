@@ -162,6 +162,8 @@ export type Database = {
           description: string | null
           id: string
           observacoes: string | null
+          prazo_data: string | null
+          prazo_hora: string | null
           priority_id: string
           recorrencia: string | null
           search_vector: unknown
@@ -177,6 +179,8 @@ export type Database = {
           description?: string | null
           id?: string
           observacoes?: string | null
+          prazo_data?: string | null
+          prazo_hora?: string | null
           priority_id: string
           recorrencia?: string | null
           search_vector?: unknown
@@ -192,6 +196,8 @@ export type Database = {
           description?: string | null
           id?: string
           observacoes?: string | null
+          prazo_data?: string | null
+          prazo_hora?: string | null
           priority_id?: string
           recorrencia?: string | null
           search_vector?: unknown
@@ -369,6 +375,38 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_log: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          kind: string
+          target_at: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          target_at: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          target_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       priorities: {
         Row: {
           color: string
@@ -398,6 +436,41 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          team_member_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          team_member_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          team_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       statuses: {
         Row: {

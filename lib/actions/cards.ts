@@ -44,7 +44,8 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre novamente." };
 
-  const { tag_ids, responsavel_ids, modelo_ids, description, observacoes, recorrencia, ...rest } = parsed.data;
+  const { tag_ids, responsavel_ids, modelo_ids, description, observacoes, recorrencia, prazo_data, prazo_hora, ...rest } =
+    parsed.data;
 
   const { data: card, error } = await supabase
     .from("cards")
@@ -53,6 +54,8 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
       description: description || null,
       observacoes: observacoes || null,
       recorrencia: recorrencia || null,
+      prazo_data: prazo_data || null,
+      prazo_hora: prazo_data ? prazo_hora || null : null,
       created_by: user.id,
     })
     .select("id")
@@ -78,7 +81,8 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
   }
 
   const supabase = await createClient();
-  const { tag_ids, responsavel_ids, modelo_ids, description, observacoes, recorrencia, ...rest } = parsed.data;
+  const { tag_ids, responsavel_ids, modelo_ids, description, observacoes, recorrencia, prazo_data, prazo_hora, ...rest } =
+    parsed.data;
 
   const { error } = await supabase
     .from("cards")
@@ -87,6 +91,8 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
       description: description || null,
       observacoes: observacoes || null,
       recorrencia: recorrencia || null,
+      prazo_data: prazo_data || null,
+      prazo_hora: prazo_data ? prazo_hora || null : null,
     })
     .eq("id", id);
 
@@ -124,7 +130,7 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
 
   const { data: original, error: fetchError } = await supabase
     .from("cards")
-    .select("title, description, card_type_id, status_id, priority_id, observacoes, recorrencia")
+    .select("title, description, card_type_id, status_id, priority_id, observacoes, recorrencia, prazo_data, prazo_hora")
     .eq("id", id)
     .maybeSingle();
   if (fetchError || !original) return { error: "Card não encontrado." };
@@ -152,6 +158,8 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
       priority_id: original.priority_id,
       observacoes: original.observacoes,
       recorrencia: original.recorrencia,
+      prazo_data: original.prazo_data,
+      prazo_hora: original.prazo_hora,
       created_by: user.id,
     })
     .select("id")

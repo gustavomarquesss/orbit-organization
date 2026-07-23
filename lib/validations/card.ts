@@ -11,6 +11,8 @@ export const cardFormSchema = z.object({
   observacoes: z.string().trim().max(5000, "Observações muito longas.").optional(),
   tag_ids: z.array(z.string()),
   recorrencia: z.enum(["", "semanal", "quinzenal", "mensal"]).optional(),
+  prazo_data: z.string().optional(),
+  prazo_hora: z.string().optional(),
 });
 
 export type CardFormInput = z.infer<typeof cardFormSchema>;
