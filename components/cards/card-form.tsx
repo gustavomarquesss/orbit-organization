@@ -19,6 +19,7 @@ import {
 import { TagInput, type TagOption } from "@/components/cards/tag-input";
 import { MeetingFields } from "@/components/cards/meeting-fields";
 import { MultiSelectChips } from "@/components/cards/multi-select-chips";
+import { AssigneeDoneList } from "@/components/cards/assignee-done-list";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { CARD_RECORRENCIA_OPTIONS } from "@/lib/utils/recorrencia";
 import { createCard, deleteCard, duplicateCard, updateCard } from "@/lib/actions/cards";
@@ -159,6 +160,10 @@ export function CardForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {isEditing && card ? (
+        <p className="font-mono text-xs text-muted-foreground">Card #{card.card_number}</p>
+      ) : null}
+
       <div className="space-y-1.5">
         <Label htmlFor="card_type_id">Tipo</Label>
         <Controller
@@ -282,6 +287,8 @@ export function CardForm({
           )}
         />
       </div>
+
+      {isEditing && card ? <AssigneeDoneList card={card} /> : null}
 
       <div className="space-y-1.5">
         <Label>Modelo</Label>

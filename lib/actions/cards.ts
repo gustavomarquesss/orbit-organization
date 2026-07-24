@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { cardFormSchema, type CardFormInput } from "@/lib/validations/card";
+import { getCardActivity, type CardActivityEntry } from "@/lib/queries/cards";
+import type { Json } from "@/lib/supabase/types";
+
+export async function fetchCardActivity(cardId: string): Promise<CardActivityEntry[]> {
+  return getCardActivity(cardId);
+}
 
 export type CardActionResult = { error?: string; id?: string };
 
@@ -30,6 +36,27 @@ async function syncCardModelos(supabase: SupabaseClient, cardId: string, modeloI
   if (modeloIds.length > 0) {
     await supabase.from("card_modelos").insert(modeloIds.map((modelo_id) => ({ card_id: cardId, modelo_id })));
   }
+}
+
+type CardActivityEventType =
+  | "created"
+  | "updated"
+  | "status_changed"
+  | "assignee_added"
+  | "assignee_removed"
+  | "assignee_done"
+  | "assignee_undone";
+
+async function logCardActivity(
+  supabase: SupabaseClient,
+  cardId: string,
+  actorId: string | null,
+  eventType: CardActivityEventType,
+  payload: Record<string, unknown> = {},
+) {
+  await supabase
+    .from("card_activity")
+    .insert({ card_id: cardId, actor_id: actorId, event_type: eventType, payload: payload as Json });
 }
 
 export async function createCard(input: CardFormInput): Promise<CardActionResult> {
@@ -66,6 +93,7 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
   await syncCardTags(supabase, card.id, tag_ids);
   await syncCardResponsaveis(supabase, card.id, responsavel_ids);
   await syncCardModelos(supabase, card.id, modelo_ids);
+  await logCardActivity(supabase, card.id, user.id, "created");
 
   revalidatePath("/cards");
   revalidatePath("/reunioes");
@@ -81,8 +109,18 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
   }
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const actorId = user?.id ?? null;
+
   const { tag_ids, responsavel_ids, modelo_ids, description, observacoes, recorrencia, prazo_data, prazo_hora, ...rest } =
     parsed.data;
+
+  const [{ data: previousCard }, { data: previousResponsaveis }] = await Promise.all([
+    supabase.from("cards").select("status_id").eq("id", id).maybeSingle(),
+    supabase.from("card_responsaveis").select("team_member_id").eq("card_id", id),
+  ]);
 
   const { error } = await supabase
     .from("cards")
@@ -101,6 +139,51 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
   await syncCardTags(supabase, id, tag_ids);
   await syncCardResponsaveis(supabase, id, responsavel_ids);
   await syncCardModelos(supabase, id, modelo_ids);
+
+  if (previousCard && previousCard.status_id !== rest.status_id) {
+    const { data: statuses } = await supabase
+      .from("statuses")
+      .select("id, label, key")
+      .in("id", [previousCard.status_id, rest.status_id]);
+    const fromStatus = statuses?.find((s) => s.id === previousCard.status_id);
+    const toStatus = statuses?.find((s) => s.id === rest.status_id);
+    await logCardActivity(supabase, id, actorId, "status_changed", {
+      from_label: fromStatus?.label ?? null,
+      to_label: toStatus?.label ?? null,
+    });
+
+    if (fromStatus?.key === "concluido" && toStatus?.key !== "concluido") {
+      await supabase.from("card_responsaveis").update({ done_at: null }).eq("card_id", id);
+    }
+  }
+
+  const previousResponsavelIds = new Set((previousResponsaveis ?? []).map((r) => r.team_member_id));
+  const nextResponsavelIds = new Set(responsavel_ids);
+  const addedIds = responsavel_ids.filter((rid) => !previousResponsavelIds.has(rid));
+  const removedIds = [...previousResponsavelIds].filter((rid) => !nextResponsavelIds.has(rid));
+
+  if (addedIds.length > 0 || removedIds.length > 0) {
+    const { data: members } = await supabase
+      .from("team_members")
+      .select("id, full_name")
+      .in("id", [...addedIds, ...removedIds]);
+    const nameById = new Map((members ?? []).map((m) => [m.id, m.full_name]));
+
+    for (const memberId of addedIds) {
+      await logCardActivity(supabase, id, actorId, "assignee_added", {
+        team_member_id: memberId,
+        team_member_name: nameById.get(memberId) ?? null,
+      });
+    }
+    for (const memberId of removedIds) {
+      await logCardActivity(supabase, id, actorId, "assignee_removed", {
+        team_member_id: memberId,
+        team_member_name: nameById.get(memberId) ?? null,
+      });
+    }
+  }
+
+  await logCardActivity(supabase, id, actorId, "updated");
 
   revalidatePath("/cards");
   revalidatePath("/reunioes");
@@ -188,6 +271,8 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
     await supabase.from("financeiro_details").insert({ card_id: newCard.id, ...financeiro });
   }
 
+  await logCardActivity(supabase, newCard.id, user.id, "created");
+
   revalidatePath("/cards");
   revalidatePath("/reunioes");
   revalidatePath("/financeiro");
@@ -213,5 +298,72 @@ export async function bulkDuplicateCards(ids: string[]): Promise<{ error?: strin
     const result = await duplicateCard(id);
     if (result.error) return { error: result.error };
   }
+  return {};
+}
+
+export async function toggleAssigneeDone(cardId: string, teamMemberId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada. Entre novamente." };
+
+  const { data: member } = await supabase
+    .from("team_members")
+    .select("full_name")
+    .eq("id", teamMemberId)
+    .maybeSingle();
+
+  const { data: current, error: fetchError } = await supabase
+    .from("card_responsaveis")
+    .select("done_at")
+    .eq("card_id", cardId)
+    .eq("team_member_id", teamMemberId)
+    .maybeSingle();
+  if (fetchError || !current) return { error: "Responsável não encontrado neste card." };
+
+  const isNowDone = current.done_at === null;
+  const { error: updateError } = await supabase
+    .from("card_responsaveis")
+    .update({ done_at: isNowDone ? new Date().toISOString() : null })
+    .eq("card_id", cardId)
+    .eq("team_member_id", teamMemberId);
+  if (updateError) return { error: "Não foi possível atualizar o responsável." };
+
+  await logCardActivity(supabase, cardId, user.id, isNowDone ? "assignee_done" : "assignee_undone", {
+    team_member_id: teamMemberId,
+    team_member_name: member?.full_name ?? null,
+  });
+
+  if (isNowDone) {
+    const { data: allResponsaveis } = await supabase
+      .from("card_responsaveis")
+      .select("done_at")
+      .eq("card_id", cardId);
+
+    const allDone = (allResponsaveis ?? []).length >= 2 && (allResponsaveis ?? []).every((r) => r.done_at !== null);
+    if (allDone) {
+      const { data: card } = await supabase.from("cards").select("status_id").eq("id", cardId).maybeSingle();
+      const { data: concluido } = await supabase.from("statuses").select("id, label").eq("key", "concluido").maybeSingle();
+
+      if (card && concluido && card.status_id !== concluido.id) {
+        const { data: fromStatus } = await supabase
+          .from("statuses")
+          .select("label")
+          .eq("id", card.status_id)
+          .maybeSingle();
+
+        await supabase.from("cards").update({ status_id: concluido.id }).eq("id", cardId);
+        await logCardActivity(supabase, cardId, user.id, "status_changed", {
+          from_label: fromStatus?.label ?? null,
+          to_label: concluido.label,
+        });
+      }
+    }
+  }
+
+  revalidatePath("/cards");
+  revalidatePath(`/cards/${cardId}`);
+  revalidatePath("/");
   return {};
 }

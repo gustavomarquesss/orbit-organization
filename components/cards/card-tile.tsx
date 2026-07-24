@@ -4,6 +4,7 @@ import { CalendarClock, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusProgress } from "@/components/cards/status-progress";
+import { CardHistoryButton } from "@/components/cards/card-history-button";
 import { renderCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { formatCurrencyBRL, nextRenewalDate } from "@/lib/utils/financeiro";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
@@ -78,6 +79,7 @@ function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWith
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
+          <span className="shrink-0 font-mono text-muted-foreground/70">#{card.card_number}</span>
           {renderCardTypeIcon("financeiro", "size-3.5 shrink-0")}
           <span className="truncate">Financeiro</span>
         </span>
@@ -85,6 +87,7 @@ function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWith
           {details ? (
             <span className="text-sm font-semibold text-foreground">{formatCurrencyBRL(details.valor)}</span>
           ) : null}
+          <CardHistoryButton cardId={card.id} />
           <SelectionCheckbox id={card.id} selected={selected} onToggleSelect={onToggleSelect} />
         </div>
       </div>
@@ -144,12 +147,14 @@ export function CardTile({
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
+          <span className="shrink-0 font-mono text-muted-foreground/70">#{card.card_number}</span>
           {renderCardTypeIcon(card.card_type?.key, "size-3.5 shrink-0")}
           <span className="truncate">{card.card_type?.label}</span>
         </span>
         <div className="flex shrink-0 items-center gap-2">
           <RecorrenciaBadge recorrencia={card.recorrencia} />
           {card.status ? <StatusProgress status={card.status} allStatuses={allStatuses} /> : null}
+          <CardHistoryButton cardId={card.id} />
           <SelectionCheckbox id={card.id} selected={selected} onToggleSelect={onToggleSelect} />
         </div>
       </div>

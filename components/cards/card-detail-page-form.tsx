@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CardForm } from "@/components/cards/card-form";
 import { FinanceiroForm } from "@/components/cards/financeiro-form";
-import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
+import { CardHistoryPanel } from "@/components/cards/card-history-panel";
+import type { CardActivityEntry, CardLookups, CardWithRelations } from "@/lib/queries/cards";
 import type { MeetingDetails } from "@/lib/queries/meetings";
 import type { FinanceiroDetails } from "@/lib/queries/financeiro";
 
@@ -13,11 +15,13 @@ export function CardDetailPageForm({
   lookups,
   meetingDetails,
   financeiroDetails,
+  activity,
 }: {
   card: CardWithRelations;
   lookups: CardLookups;
   meetingDetails: MeetingDetails | null;
   financeiroDetails: FinanceiroDetails | null;
+  activity: CardActivityEntry[];
 }) {
   const router = useRouter();
 
@@ -25,8 +29,8 @@ export function CardDetailPageForm({
     router.push(card.card_type?.key === "financeiro" ? "/financeiro" : "/cards");
   }
 
-  if (card.card_type?.key === "financeiro") {
-    return (
+  const form =
+    card.card_type?.key === "financeiro" ? (
       <FinanceiroForm
         lookups={lookups}
         financeiroTypeId={card.card_type.id}
@@ -35,16 +39,27 @@ export function CardDetailPageForm({
         onSuccess={backToCards}
         onCancel={backToCards}
       />
+    ) : (
+      <CardForm
+        key={`${card.id}-${card.updated_at}`}
+        lookups={lookups}
+        card={card}
+        meetingDetails={meetingDetails}
+        onSuccess={backToCards}
+        onCancel={backToCards}
+      />
     );
-  }
 
   return (
-    <CardForm
-      lookups={lookups}
-      card={card}
-      meetingDetails={meetingDetails}
-      onSuccess={backToCards}
-      onCancel={backToCards}
-    />
+    <Tabs defaultValue="detalhes">
+      <TabsList>
+        <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+        <TabsTrigger value="historico">Histórico</TabsTrigger>
+      </TabsList>
+      <TabsContent value="detalhes">{form}</TabsContent>
+      <TabsContent value="historico">
+        <CardHistoryPanel entries={activity} />
+      </TabsContent>
+    </Tabs>
   );
 }

@@ -7,6 +7,7 @@ import { CalendarClock, Repeat } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusProgress } from "@/components/cards/status-progress";
+import { CardHistoryButton } from "@/components/cards/card-history-button";
 import { renderCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { cardRecorrenciaLabel } from "@/lib/utils/recorrencia";
 import { getCardAccentColor } from "@/lib/utils/card-accent";
@@ -15,6 +16,7 @@ import { sinkConcluido } from "@/lib/utils/card-sort";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 type SortKey =
+  | "card_number"
   | "title"
   | "tipo"
   | "status"
@@ -27,6 +29,7 @@ type SortKey =
   | "updated_at";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: "card_number", label: "Nº" },
   { key: "title", label: "Título" },
   { key: "tipo", label: "Tipo" },
   { key: "status", label: "Status" },
@@ -55,6 +58,10 @@ function modelosLabel(card: CardWithRelations): string {
 
 function fieldValue(card: CardWithRelations, key: SortKey): string {
   switch (key) {
+    case "card_number":
+      // Zero-padded para que a comparação lexicográfica (localeCompare) ordene
+      // como número (sem isso, "10" viria antes de "9").
+      return String(card.card_number).padStart(8, "0");
     case "title":
       return card.title;
     case "tipo":
@@ -157,6 +164,7 @@ export function CardListTable({
                   </span>
                 </TableCell>
               ) : null}
+              <TableCell className="font-mono text-xs text-muted-foreground">#{card.card_number}</TableCell>
               <TableCell className="font-medium">
                 <span className="flex items-center gap-1.5">
                   {renderCardTypeIcon(card.card_type?.key, "size-3.5 shrink-0 text-muted-foreground")}
@@ -166,6 +174,9 @@ export function CardListTable({
                       <Repeat className="size-3 shrink-0 text-muted-foreground" />
                     </span>
                   ) : null}
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <CardHistoryButton cardId={card.id} />
+                  </span>
                 </span>
               </TableCell>
               <TableCell>{card.card_type?.label}</TableCell>

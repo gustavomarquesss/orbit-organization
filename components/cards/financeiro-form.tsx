@@ -126,6 +126,10 @@ export function FinanceiroForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {isEditing && card ? (
+        <p className="font-mono text-xs text-muted-foreground">Card #{card.card_number}</p>
+      ) : null}
+
       <div className="space-y-1.5">
         <Label htmlFor="title">Título/Ferramenta</Label>
         <Input id="title" {...register("title")} placeholder="Ex.: Assinatura do Canva" />

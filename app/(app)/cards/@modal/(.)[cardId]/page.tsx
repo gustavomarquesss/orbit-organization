@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
-import { getCardById, getCardLookups } from "@/lib/queries/cards";
+import { getCardActivity, getCardById, getCardLookups } from "@/lib/queries/cards";
 import { getMeetingDetails } from "@/lib/queries/meetings";
 import { getFinanceiroDetails } from "@/lib/queries/financeiro";
 
@@ -11,7 +11,7 @@ export default async function InterceptedCardModal({
   params: Promise<{ cardId: string }>;
 }) {
   const { cardId } = await params;
-  const [card, lookups] = await Promise.all([getCardById(cardId), getCardLookups()]);
+  const [card, lookups, activity] = await Promise.all([getCardById(cardId), getCardLookups(), getCardActivity(cardId)]);
 
   if (!card) notFound();
 
@@ -19,6 +19,12 @@ export default async function InterceptedCardModal({
   const financeiroDetails = card.card_type?.key === "financeiro" ? await getFinanceiroDetails(cardId) : null;
 
   return (
-    <CardDetailModal card={card} lookups={lookups} meetingDetails={meetingDetails} financeiroDetails={financeiroDetails} />
+    <CardDetailModal
+      card={card}
+      lookups={lookups}
+      meetingDetails={meetingDetails}
+      financeiroDetails={financeiroDetails}
+      activity={activity}
+    />
   );
 }

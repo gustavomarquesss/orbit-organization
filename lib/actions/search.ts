@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type SearchResult = {
   id: string;
+  cardNumber: number;
   title: string;
   typeKey: string;
   typeLabel: string;
@@ -12,13 +13,14 @@ export type SearchResult = {
 };
 
 const RESULT_SELECT = `
-  id, title,
+  id, card_number, title,
   card_type:card_types!cards_card_type_id_fkey(key, label),
   status:statuses!cards_status_id_fkey(label, color)
 `;
 
 type RawResult = {
   id: string;
+  card_number: number;
   title: string;
   card_type: { key: string; label: string } | null;
   status: { label: string; color: string } | null;
@@ -27,6 +29,7 @@ type RawResult = {
 function mapRow(row: RawResult): SearchResult {
   return {
     id: row.id,
+    cardNumber: row.card_number,
     title: row.title,
     typeKey: row.card_type?.key ?? "",
     typeLabel: row.card_type?.label ?? "",
@@ -41,6 +44,17 @@ export async function searchCards(query: string): Promise<SearchResult[]> {
 
   const supabase = await createClient();
   const results = new Map<string, SearchResult>();
+
+  // Permite buscar diretamente pelo número do card ("#42" ou apenas "42").
+  const cardNumberMatch = q.match(/^#?(\d+)$/);
+  if (cardNumberMatch) {
+    const { data } = await supabase
+      .from("cards")
+      .select(RESULT_SELECT)
+      .eq("card_number", Number(cardNumberMatch[1]))
+      .maybeSingle();
+    if (data) results.set((data as unknown as RawResult).id, mapRow(data as unknown as RawResult));
+  }
 
   const [textMatch, typeMatch, tagMatch, modeloMatch, responsavelMatch] = await Promise.all([
     supabase

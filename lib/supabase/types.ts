@@ -34,6 +34,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_activity: {
+        Row: {
+          actor_id: string | null
+          card_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          card_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          card_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_activity_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_activity_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_modelos: {
         Row: {
           card_id: string
@@ -67,14 +109,17 @@ export type Database = {
       card_responsaveis: {
         Row: {
           card_id: string
+          done_at: string | null
           team_member_id: string
         }
         Insert: {
           card_id: string
+          done_at?: string | null
           team_member_id: string
         }
         Update: {
           card_id?: string
+          done_at?: string | null
           team_member_id?: string
         }
         Relationships: [
@@ -156,6 +201,7 @@ export type Database = {
       }
       cards: {
         Row: {
+          card_number: number
           card_type_id: string
           created_at: string
           created_by: string
@@ -173,6 +219,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          card_number?: number
           card_type_id: string
           created_at?: string
           created_by: string
@@ -190,6 +237,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          card_number?: number
           card_type_id?: string
           created_at?: string
           created_by?: string

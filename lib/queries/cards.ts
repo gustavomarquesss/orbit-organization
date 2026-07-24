@@ -3,12 +3,12 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 const CARD_SELECT = `
-  id, title, description, observacoes, created_at, updated_at, recorrencia, prazo_data, prazo_hora,
+  id, card_number, title, description, observacoes, created_at, updated_at, recorrencia, prazo_data, prazo_hora,
   card_type:card_types!cards_card_type_id_fkey(id, key, label, emoji),
   status:statuses!cards_status_id_fkey(id, key, label, color),
   priority:priorities!cards_priority_id_fkey(id, key, label, color),
   card_tags(tag:tags(id, name)),
-  card_responsaveis(team_member:team_members(id, full_name, avatar_color)),
+  card_responsaveis(done_at, team_member:team_members(id, full_name, avatar_color)),
   card_modelos(modelo:modelos(id, name)),
   created_by_member:team_members!cards_created_by_fkey(id, full_name),
   updated_by_member:team_members!cards_updated_by_fkey(id, full_name),
@@ -20,6 +20,7 @@ const CARD_SELECT = `
 
 export type CardWithRelations = {
   id: string;
+  card_number: number;
   title: string;
   description: string | null;
   observacoes: string | null;
@@ -32,7 +33,10 @@ export type CardWithRelations = {
   status: { id: string; key: string; label: string; color: string } | null;
   priority: { id: string; key: string; label: string; color: string } | null;
   card_tags: { tag: { id: string; name: string } | null }[];
-  card_responsaveis: { team_member: { id: string; full_name: string; avatar_color: string } | null }[];
+  card_responsaveis: {
+    done_at: string | null;
+    team_member: { id: string; full_name: string; avatar_color: string } | null;
+  }[];
   card_modelos: { modelo: { id: string; name: string } | null }[];
   created_by_member: { id: string; full_name: string } | null;
   updated_by_member: { id: string; full_name: string } | null;
@@ -50,6 +54,26 @@ export async function getCardById(id: string): Promise<CardWithRelations | null>
 
   if (error) throw error;
   return (data as unknown as CardWithRelations) ?? null;
+}
+
+export type CardActivityEntry = {
+  id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+  actor: { id: string; full_name: string } | null;
+};
+
+export async function getCardActivity(cardId: string): Promise<CardActivityEntry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("card_activity")
+    .select("id, event_type, payload, created_at, actor:team_members!card_activity_actor_id_fkey(id, full_name)")
+    .eq("card_id", cardId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as unknown as CardActivityEntry[]) ?? [];
 }
 
 export type CardFilters = {

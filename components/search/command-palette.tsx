@@ -51,7 +51,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       open={open}
       onOpenChange={onOpenChange}
       title="Busca global"
-      description="Busque por título, descrição, tipo, modelo, responsável ou tag"
+      description="Busque por número, título, descrição, tipo, modelo, responsável ou tag"
     >
       <Command shouldFilter={false}>
         <CommandInput placeholder="Buscar em todo o painel..." value={query} onValueChange={setQuery} />
@@ -65,6 +65,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               return (
                 <CommandItem key={result.id} value={result.id} onSelect={() => selectCard(result.id)}>
                   <TypeIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">#{result.cardNumber}</span>
                   <span className="flex-1 truncate">{result.title}</span>
                   <span className="text-xs text-muted-foreground">{result.statusLabel}</span>
                 </CommandItem>
