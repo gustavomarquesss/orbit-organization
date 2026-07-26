@@ -27,6 +27,7 @@ export default async function FinanceiroPage({
     from: get("de"),
     to: get("ate"),
     pendente: get("pendente") === "1",
+    hideConcluido: get("concluidos") !== "1",
   };
   const view = get("view") === "list" ? "list" : "grid";
 

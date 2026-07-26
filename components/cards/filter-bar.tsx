@@ -5,10 +5,22 @@ import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FilterSelect } from "@/components/cards/filter-select";
 import type { CardLookups } from "@/lib/queries/cards";
 
-const FILTER_KEYS = ["tipo", "status", "prioridade", "responsavel", "modelo", "tag", "de", "ate", "pendente"];
+const FILTER_KEYS = [
+  "tipo",
+  "status",
+  "prioridade",
+  "responsavel",
+  "modelo",
+  "tag",
+  "de",
+  "ate",
+  "pendente",
+  "concluidos",
+];
 
 export function FilterBar({ lookups }: { lookups: CardLookups }) {
   const router = useRouter();
@@ -90,6 +102,14 @@ export function FilterBar({ lookups }: { lookups: CardLookups }) {
           onChange={(e) => setParam("ate", e.target.value)}
         />
       </div>
+
+      <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Checkbox
+          checked={searchParams.get("concluidos") === "1"}
+          onCheckedChange={(checked) => setParam("concluidos", checked ? "1" : "")}
+        />
+        Cards concluídos
+      </label>
 
       {hasActiveFilters ? (
         <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1.5">

@@ -22,6 +22,7 @@ export default async function ReunioesPage({
     tagIds: get("tag") ? [get("tag") as string] : undefined,
     from: get("de"),
     to: get("ate"),
+    hideConcluido: get("concluidos") !== "1",
   };
   const view = get("view") === "list" ? "list" : "grid";
 

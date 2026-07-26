@@ -9,6 +9,7 @@ import { StaleCardsList } from "@/components/dashboard/stale-cards-list";
 import { ExportButton } from "@/components/dashboard/export-button";
 import { getCardLookups } from "@/lib/queries/cards";
 import {
+  getConcludedCountByResponsavel,
   getDashboardStats,
   getOpenCountByModelo,
   getOpenCountByResponsavel,
@@ -19,7 +20,7 @@ import {
 } from "@/lib/queries/dashboard";
 
 export default async function DashboardPage() {
-  const [stats, recentCards, updatedCards, meetings, lookups, byModelo, byResponsavel, staleCards] =
+  const [stats, recentCards, updatedCards, meetings, lookups, byModelo, byResponsavel, byConcluidos, staleCards] =
     await Promise.all([
       getDashboardStats(),
       getRecentCards(),
@@ -28,6 +29,7 @@ export default async function DashboardPage() {
       getCardLookups(),
       getOpenCountByModelo(),
       getOpenCountByResponsavel(),
+      getConcludedCountByResponsavel(),
       getStaleCards(),
     ]);
 
@@ -63,7 +65,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-3">
         <BreakdownList
           title="Cards abertos por Modelo"
           icon={Layers}
@@ -77,6 +79,13 @@ export default async function DashboardPage() {
           items={byResponsavel}
           emptyLabel="Nenhum card em aberto com responsável definido."
           href={(id) => `/cards?responsavel=${id}&pendente=1`}
+        />
+        <BreakdownList
+          title="Cards concluídos por Responsável"
+          icon={CheckCircle2}
+          items={byConcluidos}
+          emptyLabel="Nenhum card concluído com responsável definido."
+          href={concluidoId ? (id) => `/cards?responsavel=${id}&status=${concluidoId}&concluidos=1` : undefined}
         />
       </div>
 

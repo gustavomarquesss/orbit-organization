@@ -87,6 +87,7 @@ export type CardFilters = {
   from?: string;
   to?: string;
   pendente?: boolean;
+  hideConcluido?: boolean;
 };
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -144,6 +145,11 @@ export async function getCardsWithRelations(filters: CardFilters = {}): Promise<
       .in("key", ["concluido", "arquivado"]);
     const excludedIds = (excludedStatuses ?? []).map((s) => s.id);
     if (excludedIds.length > 0) query = query.not("status_id", "in", `(${excludedIds.join(",")})`);
+  } else if (filters.hideConcluido && !filters.statusId) {
+    // Um filtro de Status explícito (inclusive "Concluído") sempre tem prioridade
+    // sobre a ocultação padrão de concluídos.
+    const { data: concluidoStatus } = await supabase.from("statuses").select("id").eq("key", "concluido").maybeSingle();
+    if (concluidoStatus) query = query.neq("status_id", concluidoStatus.id);
   }
 
   const { data, error } = await query;

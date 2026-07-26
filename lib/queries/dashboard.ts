@@ -33,14 +33,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const concluidoId = statuses?.find((s) => s.key === "concluido")?.id;
   const arquivadoId = statuses?.find((s) => s.key === "arquivado")?.id;
   const urgenteId = priorities?.find((p) => p.key === "urgente")?.id;
+  const excludeIds = [concluidoId, arquivadoId].filter((id): id is string => Boolean(id));
 
   let totalQuery = supabase.from("cards").select("*", { count: "exact", head: true });
   let concluidosQuery = concluidoId
     ? supabase.from("cards").select("*", { count: "exact", head: true }).eq("status_id", concluidoId)
     : null;
+  // Urgentes conta só cards ainda em aberto: um card concluído/arquivado não
+  // deve mais pesar nesse contador, mesmo que a prioridade continue "urgente".
   let urgentesQuery = urgenteId
     ? supabase.from("cards").select("*", { count: "exact", head: true }).eq("priority_id", urgenteId)
     : null;
+  if (excludeIds.length > 0) {
+    urgentesQuery = urgentesQuery?.not("status_id", "in", `(${excludeIds.join(",")})`) ?? null;
+  }
   if (financeiroId) {
     totalQuery = totalQuery.neq("card_type_id", financeiroId);
     concluidosQuery = concluidosQuery?.neq("card_type_id", financeiroId) ?? null;
@@ -53,7 +59,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     urgentesQuery ?? Promise.resolve({ count: 0 }),
   ]);
 
-  const excludeIds = [concluidoId, arquivadoId].filter((id): id is string => Boolean(id));
   let pendentesQuery = supabase.from("cards").select("*", { count: "exact", head: true });
   if (excludeIds.length > 0) {
     pendentesQuery = pendentesQuery.not("status_id", "in", `(${excludeIds.join(",")})`);
@@ -207,6 +212,37 @@ export async function getOpenCountByResponsavel(limit = 5): Promise<BreakdownIte
     .from("card_responsaveis")
     .select("team_member_id, team_member:team_members(full_name)")
     .in("card_id", openIds);
+  if (error) throw error;
+
+  type Row = { team_member_id: string; team_member: { full_name: string } | null };
+  return aggregateCounts(
+    (data ?? []) as unknown as Row[],
+    (row) => row.team_member_id,
+    (row) => row.team_member?.full_name ?? "—",
+  ).slice(0, limit);
+}
+
+// Conta cards concluídos por responsável da tarefa (card_responsaveis), não
+// por quem efetivamente marcou o card como concluído — o crédito é de quem
+// era dono da tarefa, não de quem apertou o botão.
+export async function getConcludedCountByResponsavel(limit = 5): Promise<BreakdownItem[]> {
+  const supabase = await createClient();
+  const [{ data: status }, financeiroId] = await Promise.all([
+    supabase.from("statuses").select("id").eq("key", "concluido").maybeSingle(),
+    getFinanceiroTypeId(supabase),
+  ]);
+  if (!status) return [];
+
+  let concludedCardsQuery = supabase.from("cards").select("id").eq("status_id", status.id);
+  if (financeiroId) concludedCardsQuery = concludedCardsQuery.neq("card_type_id", financeiroId);
+  const { data: concludedCards } = await concludedCardsQuery;
+  const concludedIds = (concludedCards ?? []).map((c) => c.id);
+  if (concludedIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("card_responsaveis")
+    .select("team_member_id, team_member:team_members(full_name)")
+    .in("card_id", concludedIds);
   if (error) throw error;
 
   type Row = { team_member_id: string; team_member: { full_name: string } | null };
