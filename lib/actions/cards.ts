@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { cardFormSchema, type CardFormInput } from "@/lib/validations/card";
 import { getCardActivity, type CardActivityEntry } from "@/lib/queries/cards";
+import { sendPushToMember } from "@/lib/push/notify";
 import type { Json } from "@/lib/supabase/types";
 
 export async function fetchCardActivity(cardId: string): Promise<CardActivityEntry[]> {
@@ -59,6 +60,30 @@ async function logCardActivity(
     .insert({ card_id: cardId, actor_id: actorId, event_type: eventType, payload: payload as Json });
 }
 
+// Avisa os demais membros da equipe que uma nova tarefa foi criada. Não é
+// crítico para a criação do card em si, então falhas aqui não devem impedir
+// o retorno de sucesso da action.
+async function notifyCardCreated(supabase: SupabaseClient, cardId: string, title: string, creatorId: string) {
+  try {
+    const [{ data: members }, { data: creator }] = await Promise.all([
+      supabase.from("team_members").select("id, full_name").eq("is_active", true).neq("id", creatorId),
+      supabase.from("team_members").select("full_name").eq("id", creatorId).maybeSingle(),
+    ]);
+
+    if (!members || members.length === 0) return;
+
+    const payload = {
+      title: "Nova tarefa",
+      body: `${creator?.full_name ?? "Alguém"} adicionou a tarefa "${title}"`,
+      url: `/cards/${cardId}`,
+    };
+
+    await Promise.all(members.map((member) => sendPushToMember(supabase, member.id, payload)));
+  } catch {
+    // notificação é best-effort; erros aqui não devem quebrar a criação do card
+  }
+}
+
 export async function createCard(input: CardFormInput): Promise<CardActionResult> {
   const parsed = cardFormSchema.safeParse(input);
   if (!parsed.success) {
@@ -94,6 +119,7 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
   await syncCardResponsaveis(supabase, card.id, responsavel_ids);
   await syncCardModelos(supabase, card.id, modelo_ids);
   await logCardActivity(supabase, card.id, user.id, "created");
+  await notifyCardCreated(supabase, card.id, rest.title, user.id);
 
   revalidatePath("/cards");
   revalidatePath("/reunioes");
@@ -272,6 +298,7 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
   }
 
   await logCardActivity(supabase, newCard.id, user.id, "created");
+  await notifyCardCreated(supabase, newCard.id, `${original.title} (cópia)`, user.id);
 
   revalidatePath("/cards");
   revalidatePath("/reunioes");
