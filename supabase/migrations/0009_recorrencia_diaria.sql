@@ -2,7 +2,7 @@
 -- avançar junto no próximo ciclo, para que o lembrete de notificação continue
 -- funcionando a cada card recriado (antes o prazo não era copiado).
 
-alter table public.cards drop constraint cards_recorrencia_check;
+alter table public.cards drop constraint if exists cards_recorrencia_check;
 alter table public.cards
   add constraint cards_recorrencia_check check (recorrencia in ('diaria', 'semanal', 'quinzenal', 'mensal'));
 
