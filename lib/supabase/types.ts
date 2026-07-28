@@ -299,6 +299,7 @@ export type Database = {
           data_inicio: string
           gasto_por_id: string | null
           recorrencia: string
+          tipo: string
           updated_at: string
           valor: number
         }
@@ -308,6 +309,7 @@ export type Database = {
           data_inicio: string
           gasto_por_id?: string | null
           recorrencia: string
+          tipo?: string
           updated_at?: string
           valor: number
         }
@@ -317,6 +319,7 @@ export type Database = {
           data_inicio?: string
           gasto_por_id?: string | null
           recorrencia?: string
+          tipo?: string
           updated_at?: string
           valor?: number
         }
@@ -336,6 +339,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      financeiro_metas: {
+        Row: {
+          id: string
+          meta_gastos_mensal: number
+          meta_receita_mensal: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          meta_gastos_mensal?: number
+          meta_receita_mensal?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          meta_gastos_mensal?: number
+          meta_receita_mensal?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       meeting_details: {
         Row: {

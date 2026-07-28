@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createCard, deleteCard, duplicateCard, updateCard } from "@/lib/actions/cards";
 import { upsertFinanceiroDetails } from "@/lib/actions/financeiro";
-import { financeiroFieldsSchema, RECORRENCIA_OPTIONS } from "@/lib/validations/financeiro";
+import { financeiroFieldsSchema, RECORRENCIA_OPTIONS, TIPO_OPTIONS } from "@/lib/validations/financeiro";
 import type { CardFormInput } from "@/lib/validations/card";
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 import type { FinanceiroDetails } from "@/lib/queries/financeiro";
@@ -24,9 +24,14 @@ const financeiroFormValuesSchema = z
 
 type FinanceiroFormValues = z.infer<typeof financeiroFormValuesSchema>;
 
-function toDefaultValues(card?: CardWithRelations | null, details?: FinanceiroDetails | null): FinanceiroFormValues {
+function toDefaultValues(
+  card?: CardWithRelations | null,
+  details?: FinanceiroDetails | null,
+  defaultTipo?: "gasto" | "receita",
+): FinanceiroFormValues {
   return {
     title: card?.title ?? "",
+    tipo: details?.tipo ?? defaultTipo ?? "gasto",
     valor: details ? String(details.valor) : "",
     gasto_por_id: details?.gasto_por_id ?? "",
     data_inicio: details?.data_inicio ?? "",
@@ -39,6 +44,7 @@ export function FinanceiroForm({
   financeiroTypeId,
   card,
   financeiroDetails,
+  defaultTipo,
   onSuccess,
   onCancel,
 }: {
@@ -46,6 +52,7 @@ export function FinanceiroForm({
   financeiroTypeId: string;
   card?: CardWithRelations | null;
   financeiroDetails?: FinanceiroDetails | null;
+  defaultTipo?: "gasto" | "receita";
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -58,11 +65,14 @@ export function FinanceiroForm({
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FinanceiroFormValues>({
     resolver: zodResolver(financeiroFormValuesSchema),
-    defaultValues: toDefaultValues(card, financeiroDetails),
+    defaultValues: toDefaultValues(card, financeiroDetails, defaultTipo),
   });
+
+  const tipo = watch("tipo");
 
   async function onSubmit(values: FinanceiroFormValues) {
     setServerError(null);
@@ -131,8 +141,35 @@ export function FinanceiroForm({
       ) : null}
 
       <div className="space-y-1.5">
-        <Label htmlFor="title">Título/Ferramenta</Label>
-        <Input id="title" {...register("title")} placeholder="Ex.: Assinatura do Canva" />
+        <Label htmlFor="tipo">Tipo</Label>
+        <Controller
+          control={control}
+          name="tipo"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="tipo" className="w-full">
+                <SelectValue placeholder="Selecione..." />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPO_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.tipo ? <p className="text-xs text-destructive">{errors.tipo.message}</p> : null}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="title">{tipo === "receita" ? "Título/Origem" : "Título/Ferramenta"}</Label>
+        <Input
+          id="title"
+          {...register("title")}
+          placeholder={tipo === "receita" ? "Ex.: Venda de mentoria" : "Ex.: Assinatura do Canva"}
+        />
         {errors.title ? <p className="text-xs text-destructive">{errors.title.message}</p> : null}
       </div>
 
@@ -143,7 +180,7 @@ export function FinanceiroForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="gasto_por_id">Quem assinou/gastou</Label>
+        <Label htmlFor="gasto_por_id">{tipo === "receita" ? "Quem recebeu" : "Quem assinou/gastou"}</Label>
         <Controller
           control={control}
           name="gasto_por_id"
@@ -168,7 +205,7 @@ export function FinanceiroForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Assinatura/tempo de validade</Label>
+        <Label>{tipo === "receita" ? "Data e recorrência" : "Assinatura/tempo de validade"}</Label>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="data_inicio" className="text-xs font-normal text-muted-foreground">

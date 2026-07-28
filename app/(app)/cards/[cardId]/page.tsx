@@ -23,7 +23,13 @@ export default async function CardDetailPage({
     <div className="mx-auto max-w-lg">
       <PageHeader
         title={`#${card.card_number} · ${card.title}`}
-        description={card.card_type?.key === "financeiro" ? "Editar gasto" : "Editar card"}
+        description={
+          card.card_type?.key === "financeiro"
+            ? financeiroDetails?.tipo === "receita"
+              ? "Editar receita"
+              : "Editar gasto"
+            : "Editar card"
+        }
       />
       <CardDetailPageForm
         card={card}

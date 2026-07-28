@@ -76,6 +76,48 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   };
 }
 
+export type StatusDistributionItem = {
+  key: "pendente" | "concluido" | "arquivado";
+  label: string;
+  color: string;
+  count: number;
+};
+
+// As 3 fatias são mutuamente exclusivas e somam exatamente o Total de Cards
+// (diferente do card "Urgentes", que é um recorte de Pendentes e por isso não
+// deve ser somado ao total).
+export async function getStatusDistribution(): Promise<StatusDistributionItem[]> {
+  const supabase = await createClient();
+
+  const [{ data: statuses }, financeiroId] = await Promise.all([
+    supabase.from("statuses").select("id, key"),
+    getFinanceiroTypeId(supabase),
+  ]);
+
+  const concluidoId = statuses?.find((s) => s.key === "concluido")?.id;
+  const arquivadoId = statuses?.find((s) => s.key === "arquivado")?.id;
+
+  function baseQuery() {
+    let q = supabase.from("cards").select("*", { count: "exact", head: true });
+    if (financeiroId) q = q.neq("card_type_id", financeiroId);
+    return q;
+  }
+
+  const [{ count: total }, { count: concluidos }, { count: arquivados }] = await Promise.all([
+    baseQuery(),
+    concluidoId ? baseQuery().eq("status_id", concluidoId) : Promise.resolve({ count: 0 }),
+    arquivadoId ? baseQuery().eq("status_id", arquivadoId) : Promise.resolve({ count: 0 }),
+  ]);
+
+  const pendentes = (total ?? 0) - (concluidos ?? 0) - (arquivados ?? 0);
+
+  return [
+    { key: "pendente", label: "Pendente", color: "#f59e0b", count: Math.max(0, pendentes) },
+    { key: "concluido", label: "Concluído", color: "#10b981", count: concluidos ?? 0 },
+    { key: "arquivado", label: "Arquivado", color: "#818cf8", count: arquivados ?? 0 },
+  ];
+}
+
 export type RecentCard = {
   id: string;
   title: string;

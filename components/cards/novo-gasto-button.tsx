@@ -15,25 +15,32 @@ export function NovoGastoButton({
   lookups: CardLookups;
   financeiroTypeId: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [tipoAberto, setTipoAberto] = useState<"gasto" | "receita" | null>(null);
   const router = useRouter();
 
   function handleSuccess() {
-    setOpen(false);
+    setTipoAberto(null);
     router.refresh();
   }
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)} className="gap-1.5">
-        <Plus className="size-4" />
-        Novo Gasto
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => setTipoAberto("receita")} className="gap-1.5">
+          <Plus className="size-4" />
+          Nova Receita
+        </Button>
+        <Button size="sm" onClick={() => setTipoAberto("gasto")} className="gap-1.5">
+          <Plus className="size-4" />
+          Novo Gasto
+        </Button>
+      </div>
       <FinanceiroFormDialog
-        open={open}
-        onOpenChange={setOpen}
+        open={tipoAberto !== null}
+        onOpenChange={(open) => setTipoAberto(open ? tipoAberto : null)}
         lookups={lookups}
         financeiroTypeId={financeiroTypeId}
+        defaultTipo={tipoAberto ?? "gasto"}
         onSuccess={handleSuccess}
       />
     </>

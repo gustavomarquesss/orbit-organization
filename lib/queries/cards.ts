@@ -13,7 +13,7 @@ const CARD_SELECT = `
   created_by_member:team_members!cards_created_by_fkey(id, full_name),
   updated_by_member:team_members!cards_updated_by_fkey(id, full_name),
   financeiro_details(
-    valor, data_inicio, recorrencia,
+    tipo, valor, data_inicio, recorrencia,
     gasto_por:team_members!financeiro_details_gasto_por_id_fkey(id, full_name)
   )
 `;
@@ -41,6 +41,7 @@ export type CardWithRelations = {
   created_by_member: { id: string; full_name: string } | null;
   updated_by_member: { id: string; full_name: string } | null;
   financeiro_details: {
+    tipo: "gasto" | "receita";
     valor: number;
     data_inicio: string;
     recorrencia: string;

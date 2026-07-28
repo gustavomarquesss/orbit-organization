@@ -1,7 +1,9 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { CardsExplorer } from "@/components/cards/cards-explorer";
 import { NovoGastoButton } from "@/components/cards/novo-gasto-button";
+import { FinanceiroSummary } from "@/components/financeiro/financeiro-summary";
 import { getCardLookups, getCardsWithRelations, type CardFilters } from "@/lib/queries/cards";
+import { getFinanceiroMetas, getFinanceiroSummary } from "@/lib/queries/financeiro";
 
 export default async function FinanceiroPage({
   searchParams,
@@ -31,11 +33,18 @@ export default async function FinanceiroPage({
   };
   const view = get("view") === "list" ? "list" : "grid";
 
-  const cards = financeiroId ? await getCardsWithRelations(filters) : [];
+  const [cards, summary, metas] = await Promise.all([
+    financeiroId ? getCardsWithRelations(filters) : Promise.resolve([]),
+    getFinanceiroSummary(),
+    getFinanceiroMetas(),
+  ]);
 
   return (
     <>
-      <PageHeader title="Financeiro" description="Gastos organizados fora das métricas do Dashboard." />
+      <PageHeader title="Financeiro" description="Gastos e receitas organizados fora das métricas do Dashboard." />
+      <div className="mb-4">
+        <FinanceiroSummary summary={summary} metas={metas} />
+      </div>
       <CardsExplorer
         cards={cards}
         lookups={scopedLookups}

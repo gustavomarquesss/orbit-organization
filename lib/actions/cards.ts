@@ -252,7 +252,7 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
       supabase.from("meeting_details").select("meeting_date, meeting_time, assuntos").eq("card_id", id).maybeSingle(),
       supabase
         .from("financeiro_details")
-        .select("valor, gasto_por_id, data_inicio, recorrencia")
+        .select("tipo, valor, gasto_por_id, data_inicio, recorrencia")
         .eq("card_id", id)
         .maybeSingle(),
     ]);

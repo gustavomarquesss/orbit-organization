@@ -71,6 +71,7 @@ function PrazoBadge({ card }: { card: CardWithRelations }) {
 function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWithRelations } & SelectionProps) {
   const details = card.financeiro_details;
   const renewal = details ? nextRenewalDate(details.data_inicio, details.recorrencia) : null;
+  const isReceita = details?.tipo === "receita";
 
   return (
     <Link
@@ -81,11 +82,15 @@ function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWith
         <span className="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
           <span className="shrink-0 font-mono text-muted-foreground/70">#{card.card_number}</span>
           {renderCardTypeIcon("financeiro", "size-3.5 shrink-0")}
-          <span className="truncate">Financeiro</span>
+          <Badge variant="secondary" className={`text-[10px] ${isReceita ? "text-emerald-500" : "text-red-500"}`}>
+            {isReceita ? "Receita" : "Gasto"}
+          </Badge>
         </span>
         <div className="flex shrink-0 items-center gap-2">
           {details ? (
-            <span className="text-sm font-semibold text-foreground">{formatCurrencyBRL(details.valor)}</span>
+            <span className={`text-sm font-semibold ${isReceita ? "text-emerald-500" : "text-foreground"}`}>
+              {isReceita ? "+" : "-"} {formatCurrencyBRL(details.valor)}
+            </span>
           ) : null}
           <CardHistoryButton cardId={card.id} />
           <SelectionCheckbox id={card.id} selected={selected} onToggleSelect={onToggleSelect} />
@@ -96,7 +101,7 @@ function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWith
 
       <div className="mt-auto flex flex-col gap-1 text-[11px] text-muted-foreground">
         <span>{renewal ? `Renova em ${renewal.toLocaleDateString("pt-BR")}` : "Pagamento único"}</span>
-        <span>Assinado por {details?.gasto_por?.full_name ?? "—"}</span>
+        <span>{isReceita ? "Recebido por" : "Assinado por"} {details?.gasto_por?.full_name ?? "—"}</span>
       </div>
     </Link>
   );

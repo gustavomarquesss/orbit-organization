@@ -26,6 +26,7 @@ export function CardDetailModal({
 }) {
   const router = useRouter();
   const isFinanceiro = card.card_type?.key === "financeiro";
+  const financeiroLabel = financeiroDetails?.tipo === "receita" ? "Editar Receita" : "Editar Gasto";
 
   function close() {
     router.back();
@@ -36,7 +37,7 @@ export function CardDetailModal({
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isFinanceiro ? "Editar Gasto" : "Editar Card"} #{card.card_number}
+            {isFinanceiro ? financeiroLabel : "Editar Card"} #{card.card_number}
           </DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="detalhes">

@@ -27,12 +27,14 @@ export function StatTile({
   icon: Icon,
   tone,
   href,
+  caption,
 }: {
   label: string;
   value: number;
   icon: LucideIcon;
   tone?: "yellow" | "green" | "red";
   href?: string;
+  caption?: string;
 }) {
   const active = tone && value > 0 ? TONE_STYLES[tone] : null;
 
@@ -46,9 +48,10 @@ export function StatTile({
       >
         <Icon className={cn("size-4.5", active ? active.icon : "text-muted-foreground")} />
       </div>
-      <div>
+      <div className="min-w-0">
         <div className={cn("text-2xl font-semibold tabular-nums", active?.value)}>{value}</div>
         <div className="text-xs text-muted-foreground">{label}</div>
+        {caption ? <div className="truncate text-[10px] text-muted-foreground/70">{caption}</div> : null}
       </div>
     </>
   );

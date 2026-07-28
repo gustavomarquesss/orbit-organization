@@ -7,6 +7,7 @@ import { UpcomingMeetingsList } from "@/components/dashboard/upcoming-meetings-l
 import { BreakdownList } from "@/components/dashboard/breakdown-list";
 import { StaleCardsList } from "@/components/dashboard/stale-cards-list";
 import { ExportButton } from "@/components/dashboard/export-button";
+import { StatusPieChart } from "@/components/dashboard/status-pie-chart";
 import { getCardLookups } from "@/lib/queries/cards";
 import {
   getConcludedCountByResponsavel,
@@ -16,22 +17,34 @@ import {
   getRecentCards,
   getRecentlyUpdatedCards,
   getStaleCards,
+  getStatusDistribution,
   getUpcomingMeetings,
 } from "@/lib/queries/dashboard";
 
 export default async function DashboardPage() {
-  const [stats, recentCards, updatedCards, meetings, lookups, byModelo, byResponsavel, byConcluidos, staleCards] =
-    await Promise.all([
-      getDashboardStats(),
-      getRecentCards(),
-      getRecentlyUpdatedCards(),
-      getUpcomingMeetings(),
-      getCardLookups(),
-      getOpenCountByModelo(),
-      getOpenCountByResponsavel(),
-      getConcludedCountByResponsavel(),
-      getStaleCards(),
-    ]);
+  const [
+    stats,
+    recentCards,
+    updatedCards,
+    meetings,
+    lookups,
+    byModelo,
+    byResponsavel,
+    byConcluidos,
+    staleCards,
+    statusDistribution,
+  ] = await Promise.all([
+    getDashboardStats(),
+    getRecentCards(),
+    getRecentlyUpdatedCards(),
+    getUpcomingMeetings(),
+    getCardLookups(),
+    getOpenCountByModelo(),
+    getOpenCountByResponsavel(),
+    getConcludedCountByResponsavel(),
+    getStaleCards(),
+    getStatusDistribution(),
+  ]);
 
   const concluidoId = lookups.statuses.find((s) => s.key === "concluido")?.id;
   const urgenteId = lookups.priorities.find((p) => p.key === "urgente")?.id;
@@ -62,8 +75,11 @@ export default async function DashboardPage() {
           icon={TriangleAlert}
           tone="red"
           href={urgenteId ? `/cards?prioridade=${urgenteId}` : undefined}
+          caption={stats.urgentes > 0 ? `${stats.urgentes} dos ${stats.pendentes} pendentes` : undefined}
         />
       </div>
+
+      <StatusPieChart items={statusDistribution} />
 
       <div className="grid gap-3 md:grid-cols-3">
         <BreakdownList

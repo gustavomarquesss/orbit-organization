@@ -8,7 +8,13 @@ export const RECORRENCIA_OPTIONS = [
   { value: "anual", label: "Anual" },
 ] as const;
 
+export const TIPO_OPTIONS = [
+  { value: "gasto", label: "Gasto" },
+  { value: "receita", label: "Receita" },
+] as const;
+
 export const financeiroFieldsSchema = z.object({
+  tipo: z.enum(["gasto", "receita"], { message: "Selecione o tipo." }),
   valor: z
     .string()
     .min(1, "Informe um valor.")
@@ -21,3 +27,14 @@ export const financeiroFieldsSchema = z.object({
 });
 
 export type FinanceiroFieldsInput = z.infer<typeof financeiroFieldsSchema>;
+
+export const financeiroMetasSchema = z.object({
+  meta_gastos_mensal: z
+    .string()
+    .refine((v) => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0), "Informe um valor válido."),
+  meta_receita_mensal: z
+    .string()
+    .refine((v) => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0), "Informe um valor válido."),
+});
+
+export type FinanceiroMetasInput = z.infer<typeof financeiroMetasSchema>;

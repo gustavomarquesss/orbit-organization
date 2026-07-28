@@ -12,6 +12,7 @@ export function FinanceiroFormDialog({
   financeiroTypeId,
   card,
   financeiroDetails,
+  defaultTipo,
   onSuccess,
 }: {
   open: boolean;
@@ -20,19 +21,30 @@ export function FinanceiroFormDialog({
   financeiroTypeId: string;
   card?: CardWithRelations | null;
   financeiroDetails?: FinanceiroDetails | null;
+  defaultTipo?: "gasto" | "receita";
   onSuccess: () => void;
 }) {
+  const tipo = financeiroDetails?.tipo ?? defaultTipo ?? "gasto";
+  const title = card
+    ? tipo === "receita"
+      ? "Editar Receita"
+      : "Editar Gasto"
+    : tipo === "receita"
+      ? "Nova Receita"
+      : "Novo Gasto";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{card ? "Editar Gasto" : "Novo Gasto"}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <FinanceiroForm
           lookups={lookups}
           financeiroTypeId={financeiroTypeId}
           card={card}
           financeiroDetails={financeiroDetails}
+          defaultTipo={defaultTipo}
           onSuccess={onSuccess}
           onCancel={() => onOpenChange(false)}
         />
