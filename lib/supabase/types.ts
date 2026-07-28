@@ -595,6 +595,7 @@ export type Database = {
       team_members: {
         Row: {
           avatar_color: string
+          avatar_url: string | null
           created_at: string
           email: string
           full_name: string
@@ -603,6 +604,7 @@ export type Database = {
         }
         Insert: {
           avatar_color?: string
+          avatar_url?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -611,6 +613,7 @@ export type Database = {
         }
         Update: {
           avatar_color?: string
+          avatar_url?: string | null
           created_at?: string
           email?: string
           full_name?: string

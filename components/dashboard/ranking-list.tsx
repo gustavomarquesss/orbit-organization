@@ -1,6 +1,7 @@
 import { Trophy } from "lucide-react";
 
 import type { RankingItem } from "@/lib/queries/dashboard";
+import { TeamMemberAvatar } from "@/components/team/team-member-avatar";
 import { cn } from "@/lib/utils";
 
 const POSITION_LABELS = ["1º", "2º", "3º"];
@@ -28,6 +29,7 @@ function RankingRow({ item }: { item: RankingItem }) {
       >
         {positionLabel}
       </span>
+      <TeamMemberAvatar name={item.label} avatarUrl={item.avatarUrl} avatarColor={item.avatarColor} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2 text-sm">
           <span className="truncate font-medium">{item.label}</span>

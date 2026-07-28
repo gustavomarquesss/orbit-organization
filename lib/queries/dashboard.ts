@@ -286,7 +286,12 @@ function getCurrentMonthRangeBRT(): { start: string; end: string; label: string 
   return { start: start.toISOString(), end: end.toISOString(), label: rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) };
 }
 
-export type RankingItem = BreakdownItem & { position: number; gapToAbove: number };
+export type RankingItem = BreakdownItem & {
+  position: number;
+  gapToAbove: number;
+  avatarUrl: string | null;
+  avatarColor: string;
+};
 
 // Ranking mensal de tarefas concluídas por pessoa (reseta todo mês, ao
 // contrário dos resumos acima que são acumulados desde sempre). Cada membro
@@ -299,12 +304,24 @@ export async function getMonthlyRanking(): Promise<{ items: RankingItem[]; month
   const [{ data: status }, { data: cardTypes }, { data: members }] = await Promise.all([
     supabase.from("statuses").select("id").eq("key", "concluido").maybeSingle(),
     supabase.from("card_types").select("id").in("key", RANKING_CARD_TYPE_KEYS),
-    supabase.from("team_members").select("id, full_name").eq("is_active", true).order("full_name"),
+    supabase
+      .from("team_members")
+      .select("id, full_name, avatar_url, avatar_color")
+      .eq("is_active", true)
+      .order("full_name"),
   ]);
 
   const counts = new Map<string, RankingItem>();
   for (const member of members ?? []) {
-    counts.set(member.id, { id: member.id, label: member.full_name, count: 0, position: 0, gapToAbove: 0 });
+    counts.set(member.id, {
+      id: member.id,
+      label: member.full_name,
+      count: 0,
+      position: 0,
+      gapToAbove: 0,
+      avatarUrl: member.avatar_url,
+      avatarColor: member.avatar_color,
+    });
   }
 
   const typeIds = (cardTypes ?? []).map((t) => t.id);

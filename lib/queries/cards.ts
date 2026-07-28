@@ -8,13 +8,13 @@ const CARD_SELECT = `
   status:statuses!cards_status_id_fkey(id, key, label, color),
   priority:priorities!cards_priority_id_fkey(id, key, label, color),
   card_tags(tag:tags(id, name)),
-  card_responsaveis(team_member:team_members(id, full_name, avatar_color)),
+  card_responsaveis(team_member:team_members(id, full_name, avatar_color, avatar_url)),
   card_modelos(modelo:modelos(id, name)),
-  created_by_member:team_members!cards_created_by_fkey(id, full_name),
-  updated_by_member:team_members!cards_updated_by_fkey(id, full_name),
+  created_by_member:team_members!cards_created_by_fkey(id, full_name, avatar_color, avatar_url),
+  updated_by_member:team_members!cards_updated_by_fkey(id, full_name, avatar_color, avatar_url),
   financeiro_details(
     tipo, valor, data_inicio, recorrencia,
-    gasto_por:team_members!financeiro_details_gasto_por_id_fkey(id, full_name)
+    gasto_por:team_members!financeiro_details_gasto_por_id_fkey(id, full_name, avatar_color, avatar_url)
   )
 `;
 
@@ -34,17 +34,17 @@ export type CardWithRelations = {
   priority: { id: string; key: string; label: string; color: string } | null;
   card_tags: { tag: { id: string; name: string } | null }[];
   card_responsaveis: {
-    team_member: { id: string; full_name: string; avatar_color: string } | null;
+    team_member: { id: string; full_name: string; avatar_color: string; avatar_url: string | null } | null;
   }[];
   card_modelos: { modelo: { id: string; name: string } | null }[];
-  created_by_member: { id: string; full_name: string } | null;
-  updated_by_member: { id: string; full_name: string } | null;
+  created_by_member: { id: string; full_name: string; avatar_color: string; avatar_url: string | null } | null;
+  updated_by_member: { id: string; full_name: string; avatar_color: string; avatar_url: string | null } | null;
   financeiro_details: {
     tipo: "gasto" | "receita";
     valor: number;
     data_inicio: string;
     recorrencia: string;
-    gasto_por: { id: string; full_name: string } | null;
+    gasto_por: { id: string; full_name: string; avatar_color: string; avatar_url: string | null } | null;
   } | null;
 };
 

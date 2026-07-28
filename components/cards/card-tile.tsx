@@ -3,6 +3,8 @@ import { CalendarClock, Repeat } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AvatarGroup } from "@/components/ui/avatar";
+import { TeamMemberAvatar } from "@/components/team/team-member-avatar";
 import { StatusProgress } from "@/components/cards/status-progress";
 import { CardHistoryButton } from "@/components/cards/card-history-button";
 import { renderCardTypeIcon } from "@/lib/utils/card-type-icons";
@@ -107,13 +109,36 @@ function FinanceiroCardTile({ card, selected, onToggleSelect }: { card: CardWith
   );
 }
 
-function formatResponsaveis(card: CardWithRelations): string {
-  const names = card.card_responsaveis
-    .map((cr) => cr.team_member?.full_name)
-    .filter((name): name is string => Boolean(name));
-  if (names.length === 0) return "Sem responsável";
-  if (names.length <= 2) return names.join(", ");
-  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+function ResponsaveisDisplay({ card }: { card: CardWithRelations }) {
+  const members = card.card_responsaveis
+    .map((cr) => cr.team_member)
+    .filter((m): m is NonNullable<typeof m> => Boolean(m));
+
+  if (members.length === 0) {
+    return <span className="truncate text-[11px] text-muted-foreground">Sem responsável</span>;
+  }
+
+  if (members.length === 1) {
+    return (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <TeamMemberAvatar name={members[0].full_name} avatarUrl={members[0].avatar_url} avatarColor={members[0].avatar_color} size="sm" />
+        <span className="truncate text-[11px] text-muted-foreground">{members[0].full_name}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <AvatarGroup>
+        {members.slice(0, 3).map((m) => (
+          <TeamMemberAvatar key={m.id} name={m.full_name} avatarUrl={m.avatar_url} avatarColor={m.avatar_color} size="sm" />
+        ))}
+      </AvatarGroup>
+      {members.length > 3 ? (
+        <span className="shrink-0 text-[11px] text-muted-foreground">+{members.length - 3}</span>
+      ) : null}
+    </span>
+  );
 }
 
 function formatModelos(card: CardWithRelations): string {
@@ -183,7 +208,7 @@ export function CardTile({
       ) : null}
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
-        <span className="truncate">{formatResponsaveis(card)}</span>
+        <ResponsaveisDisplay card={card} />
         {formatModelos(card) ? <span className="shrink-0 truncate">{formatModelos(card)}</span> : null}
       </div>
 

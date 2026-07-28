@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function EquipePage() {
   const supabase = await createClient();
-  const { data } = await supabase.from("team_members").select("id, full_name, email, is_active").order("full_name");
+  const { data } = await supabase
+    .from("team_members")
+    .select("id, full_name, email, is_active, avatar_url, avatar_color")
+    .order("full_name");
 
   return (
     <>

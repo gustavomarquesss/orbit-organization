@@ -11,7 +11,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const lookups = await getCardLookups();
+  const [lookups, { data: member }] = await Promise.all([
+    getCardLookups(),
+    user
+      ? supabase.from("team_members").select("full_name, avatar_url, avatar_color").eq("id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   return (
     <SearchProvider>
@@ -19,7 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex min-h-screen">
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col">
-            <Topbar email={user?.email ?? ""} />
+            <Topbar email={user?.email ?? ""} member={member} />
             <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6">{children}</main>
           </div>
         </div>

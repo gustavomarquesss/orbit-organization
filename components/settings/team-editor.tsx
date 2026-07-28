@@ -6,9 +6,17 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TeamMemberAvatar } from "@/components/team/team-member-avatar";
 import { inviteTeamMember, toggleTeamMemberActive } from "@/lib/actions/team";
 
-type Member = { id: string; full_name: string; email: string; is_active: boolean };
+type Member = {
+  id: string;
+  full_name: string;
+  email: string;
+  is_active: boolean;
+  avatar_url: string | null;
+  avatar_color: string;
+};
 
 export function TeamEditor({ members }: { members: Member[] }) {
   const [isPending, startTransition] = useTransition();
@@ -69,7 +77,17 @@ export function TeamEditor({ members }: { members: Member[] }) {
           <TableBody>
             {members.map((member) => (
               <TableRow key={member.id}>
-                <TableCell>{member.full_name}</TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-2">
+                    <TeamMemberAvatar
+                      name={member.full_name}
+                      avatarUrl={member.avatar_url}
+                      avatarColor={member.avatar_color}
+                      size="sm"
+                    />
+                    {member.full_name}
+                  </span>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{member.email}</TableCell>
                 <TableCell>
                   <Button

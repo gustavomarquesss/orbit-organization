@@ -6,6 +6,8 @@ import { CalendarClock, Repeat } from "lucide-react";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AvatarGroup } from "@/components/ui/avatar";
+import { TeamMemberAvatar } from "@/components/team/team-member-avatar";
 import { StatusProgress } from "@/components/cards/status-progress";
 import { CardHistoryButton } from "@/components/cards/card-history-button";
 import { renderCardTypeIcon } from "@/lib/utils/card-type-icons";
@@ -47,6 +49,34 @@ function responsaveisLabel(card: CardWithRelations): string {
     .map((cr) => cr.team_member?.full_name)
     .filter((name): name is string => Boolean(name))
     .join(", ");
+}
+
+function ResponsaveisCell({ card }: { card: CardWithRelations }) {
+  const members = card.card_responsaveis
+    .map((cr) => cr.team_member)
+    .filter((m): m is NonNullable<typeof m> => Boolean(m));
+
+  if (members.length === 0) return <>—</>;
+
+  if (members.length === 1) {
+    return (
+      <span className="flex items-center gap-1.5">
+        <TeamMemberAvatar name={members[0].full_name} avatarUrl={members[0].avatar_url} avatarColor={members[0].avatar_color} size="sm" />
+        {members[0].full_name}
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex items-center gap-1.5">
+      <AvatarGroup>
+        {members.slice(0, 3).map((m) => (
+          <TeamMemberAvatar key={m.id} name={m.full_name} avatarUrl={m.avatar_url} avatarColor={m.avatar_color} size="sm" />
+        ))}
+      </AvatarGroup>
+      {members.length > 3 ? `+${members.length - 3}` : null}
+    </span>
+  );
 }
 
 function modelosLabel(card: CardWithRelations): string {
@@ -184,7 +214,9 @@ export function CardListTable({
                 {card.status ? <StatusProgress status={card.status} allStatuses={allStatuses} /> : null}
               </TableCell>
               <TableCell>{card.priority?.label}</TableCell>
-              <TableCell>{responsaveisLabel(card) || "—"}</TableCell>
+              <TableCell>
+                <ResponsaveisCell card={card} />
+              </TableCell>
               <TableCell>{modelosLabel(card) || "—"}</TableCell>
               <TableCell
                 className={`text-xs ${isPrazoVencido(card) ? "font-medium text-destructive" : "text-muted-foreground"}`}

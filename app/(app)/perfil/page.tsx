@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Flame, ListChecks, Target, Trophy } from "lucide-react";
 
-import { PageHeader } from "@/components/layout/page-header";
 import { BreakdownList } from "@/components/dashboard/breakdown-list";
 import { StatTile } from "@/components/dashboard/stat-tile";
+import { TeamMemberAvatar } from "@/components/team/team-member-avatar";
+import { EditProfileDialog } from "@/components/perfil/edit-profile-dialog";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { formatPrazo, isPrazoVencido } from "@/lib/utils/prazo";
 import { createClient } from "@/lib/supabase/server";
@@ -23,7 +24,7 @@ export default async function PerfilPage() {
 
   const { data: member } = await supabase
     .from("team_members")
-    .select("full_name")
+    .select("full_name, avatar_url, avatar_color")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -39,10 +40,27 @@ export default async function PerfilPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={member?.full_name ?? "Perfil"}
-        description={`Ranking de ${ranking.monthLabel}: ${me ? `${me.position}º lugar` : "—"} com ${me?.count ?? 0} tarefa${me?.count === 1 ? "" : "s"} concluída${me?.count === 1 ? "" : "s"}`}
-      />
+      <div className="mb-2 flex items-center gap-3">
+        <TeamMemberAvatar
+          name={member?.full_name ?? "Perfil"}
+          avatarUrl={member?.avatar_url ?? null}
+          avatarColor={member?.avatar_color ?? "#6366f1"}
+          size="lg"
+        />
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold tracking-tight">{member?.full_name ?? "Perfil"}</h1>
+            <EditProfileDialog
+              fullName={member?.full_name ?? ""}
+              avatarUrl={member?.avatar_url ?? null}
+              avatarColor={member?.avatar_color ?? "#6366f1"}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {`Ranking de ${ranking.monthLabel}: ${me ? `${me.position}º lugar` : "—"} com ${me?.count ?? 0} tarefa${me?.count === 1 ? "" : "s"} concluída${me?.count === 1 ? "" : "s"}`}
+          </p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatTile label="Posição no mês" value={me?.position ?? 0} icon={Trophy} />
