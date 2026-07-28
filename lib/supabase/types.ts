@@ -109,17 +109,14 @@ export type Database = {
       card_responsaveis: {
         Row: {
           card_id: string
-          done_at: string | null
           team_member_id: string
         }
         Insert: {
           card_id: string
-          done_at?: string | null
           team_member_id: string
         }
         Update: {
           card_id?: string
-          done_at?: string | null
           team_member_id?: string
         }
         Relationships: [
@@ -203,6 +200,7 @@ export type Database = {
         Row: {
           card_number: number
           card_type_id: string
+          concluded_at: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -221,6 +219,7 @@ export type Database = {
         Insert: {
           card_number?: number
           card_type_id: string
+          concluded_at?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -239,6 +238,7 @@ export type Database = {
         Update: {
           card_number?: number
           card_type_id?: string
+          concluded_at?: string | null
           created_at?: string
           created_by?: string
           description?: string | null

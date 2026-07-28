@@ -19,7 +19,6 @@ import {
 import { TagInput, type TagOption } from "@/components/cards/tag-input";
 import { MeetingFields } from "@/components/cards/meeting-fields";
 import { MultiSelectChips } from "@/components/cards/multi-select-chips";
-import { AssigneeDoneList } from "@/components/cards/assignee-done-list";
 import { getCardTypeIcon } from "@/lib/utils/card-type-icons";
 import { CARD_RECORRENCIA_OPTIONS } from "@/lib/utils/recorrencia";
 import { createCard, deleteCard, duplicateCard, updateCard } from "@/lib/actions/cards";
@@ -273,22 +272,43 @@ export function CardForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Responsáveis</Label>
+        <Label>{isReuniao ? "Responsáveis" : "Responsável"}</Label>
         <Controller
           control={control}
           name="responsavel_ids"
-          render={({ field }) => (
-            <MultiSelectChips
-              options={lookups.teamMembers.map((m) => ({ id: m.id, label: m.full_name }))}
-              value={field.value}
-              onChange={field.onChange}
-              showSelectAll
-            />
-          )}
+          render={({ field }) =>
+            isReuniao ? (
+              <MultiSelectChips
+                options={lookups.teamMembers.map((m) => ({ id: m.id, label: m.full_name }))}
+                value={field.value}
+                onChange={field.onChange}
+                showSelectAll
+              />
+            ) : (
+              <Select
+                value={field.value[0] ?? "none"}
+                onValueChange={(v) => field.onChange(v === "none" ? [] : [v])}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sem responsável">
+                    {(value: string) =>
+                      lookups.teamMembers.find((m) => m.id === value)?.full_name ?? "Sem responsável"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem responsável</SelectItem>
+                  {lookups.teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )
+          }
         />
       </div>
-
-      {isEditing && card ? <AssigneeDoneList card={card} /> : null}
 
       <div className="space-y-1.5">
         <Label>Modelo</Label>

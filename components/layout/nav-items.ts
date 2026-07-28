@@ -1,10 +1,11 @@
-import { CalendarDays, LayoutDashboard, LayoutGrid, Wallet } from "lucide-react";
+import { CalendarDays, LayoutDashboard, LayoutGrid, User, Wallet } from "lucide-react";
 
 export const mainNavItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/cards", label: "Cards", icon: LayoutGrid },
   { href: "/reunioes", label: "Reuniões", icon: CalendarDays },
   { href: "/financeiro", label: "Financeiro", icon: Wallet },
+  { href: "/perfil", label: "Perfil", icon: User },
 ];
 
 export const settingsNavItems = [

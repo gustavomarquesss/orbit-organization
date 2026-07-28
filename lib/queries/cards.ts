@@ -8,7 +8,7 @@ const CARD_SELECT = `
   status:statuses!cards_status_id_fkey(id, key, label, color),
   priority:priorities!cards_priority_id_fkey(id, key, label, color),
   card_tags(tag:tags(id, name)),
-  card_responsaveis(done_at, team_member:team_members(id, full_name, avatar_color)),
+  card_responsaveis(team_member:team_members(id, full_name, avatar_color)),
   card_modelos(modelo:modelos(id, name)),
   created_by_member:team_members!cards_created_by_fkey(id, full_name),
   updated_by_member:team_members!cards_updated_by_fkey(id, full_name),
@@ -34,7 +34,6 @@ export type CardWithRelations = {
   priority: { id: string; key: string; label: string; color: string } | null;
   card_tags: { tag: { id: string; name: string } | null }[];
   card_responsaveis: {
-    done_at: string | null;
     team_member: { id: string; full_name: string; avatar_color: string } | null;
   }[];
   card_modelos: { modelo: { id: string; name: string } | null }[];

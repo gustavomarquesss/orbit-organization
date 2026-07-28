@@ -264,35 +264,80 @@ export async function getOpenCountByResponsavel(limit = 5): Promise<BreakdownIte
   ).slice(0, limit);
 }
 
-// Conta cards concluídos por responsável da tarefa (card_responsaveis), não
-// por quem efetivamente marcou o card como concluído — o crédito é de quem
-// era dono da tarefa, não de quem apertou o botão.
-export async function getConcludedCountByResponsavel(limit = 5): Promise<BreakdownItem[]> {
+// Só esses 5 tipos contam para o ranking de gamificação — Reunião, Anotação
+// e Financeiro ficam de fora (não são tarefas da operação).
+const RANKING_CARD_TYPE_KEYS = ["video", "foto", "funil", "referencia", "conteudo"];
+
+// Brasil (America/Sao_Paulo) está fixo em UTC-3, sem horário de verão desde
+// 2019 — por isso dá pra calcular o início/fim do mês em BRT com aritmética
+// simples a partir do ano/mês atual (obtidos via Intl, sem depender de libs).
+function getCurrentMonthRangeBRT(): { start: string; end: string; label: string } {
+  const timeZone = "America/Sao_Paulo";
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit" }).formatToParts(
+    new Date(),
+  );
+  const year = Number(parts.find((p) => p.type === "year")?.value);
+  const month = Number(parts.find((p) => p.type === "month")?.value); // 1-12
+
+  const start = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0));
+  const end = new Date(Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1, 3, 0, 0));
+  const rawLabel = start.toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone });
+
+  return { start: start.toISOString(), end: end.toISOString(), label: rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) };
+}
+
+export type RankingItem = BreakdownItem & { position: number; gapToAbove: number };
+
+// Ranking mensal de tarefas concluídas por pessoa (reseta todo mês, ao
+// contrário dos resumos acima que são acumulados desde sempre). Cada membro
+// ativo aparece mesmo com 0 tarefas, e cada item já vem com o quanto falta
+// pra alcançar a posição imediatamente acima (0 para quem lidera).
+export async function getMonthlyRanking(): Promise<{ items: RankingItem[]; monthLabel: string }> {
   const supabase = await createClient();
-  const [{ data: status }, financeiroId] = await Promise.all([
+  const { start, end, label: monthLabel } = getCurrentMonthRangeBRT();
+
+  const [{ data: status }, { data: cardTypes }, { data: members }] = await Promise.all([
     supabase.from("statuses").select("id").eq("key", "concluido").maybeSingle(),
-    getFinanceiroTypeId(supabase),
+    supabase.from("card_types").select("id").in("key", RANKING_CARD_TYPE_KEYS),
+    supabase.from("team_members").select("id, full_name").eq("is_active", true).order("full_name"),
   ]);
-  if (!status) return [];
 
-  let concludedCardsQuery = supabase.from("cards").select("id").eq("status_id", status.id);
-  if (financeiroId) concludedCardsQuery = concludedCardsQuery.neq("card_type_id", financeiroId);
-  const { data: concludedCards } = await concludedCardsQuery;
-  const concludedIds = (concludedCards ?? []).map((c) => c.id);
-  if (concludedIds.length === 0) return [];
+  const counts = new Map<string, RankingItem>();
+  for (const member of members ?? []) {
+    counts.set(member.id, { id: member.id, label: member.full_name, count: 0, position: 0, gapToAbove: 0 });
+  }
 
-  const { data, error } = await supabase
-    .from("card_responsaveis")
-    .select("team_member_id, team_member:team_members(full_name)")
-    .in("card_id", concludedIds);
-  if (error) throw error;
+  const typeIds = (cardTypes ?? []).map((t) => t.id);
+  if (status && typeIds.length > 0) {
+    const { data: concludedCards } = await supabase
+      .from("cards")
+      .select("id")
+      .eq("status_id", status.id)
+      .in("card_type_id", typeIds)
+      .gte("concluded_at", start)
+      .lt("concluded_at", end);
 
-  type Row = { team_member_id: string; team_member: { full_name: string } | null };
-  return aggregateCounts(
-    (data ?? []) as unknown as Row[],
-    (row) => row.team_member_id,
-    (row) => row.team_member?.full_name ?? "—",
-  ).slice(0, limit);
+    const concludedIds = (concludedCards ?? []).map((c) => c.id);
+    if (concludedIds.length > 0) {
+      const { data: responsaveis } = await supabase
+        .from("card_responsaveis")
+        .select("team_member_id")
+        .in("card_id", concludedIds);
+
+      for (const row of responsaveis ?? []) {
+        const entry = counts.get(row.team_member_id);
+        if (entry) entry.count += 1;
+      }
+    }
+  }
+
+  const items = Array.from(counts.values()).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  items.forEach((item, index) => {
+    item.position = index + 1;
+    item.gapToAbove = index === 0 ? 0 : items[index - 1].count - item.count;
+  });
+
+  return { items, monthLabel };
 }
 
 export type StaleCard = { id: string; title: string; updatedAt: string };
