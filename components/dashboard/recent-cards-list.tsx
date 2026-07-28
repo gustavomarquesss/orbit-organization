@@ -17,7 +17,7 @@ export function RecentCardsList({
   emptyLabel: string;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="min-w-0 rounded-xl border bg-card p-4">
       <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium">
         <Icon className="size-4 text-muted-foreground" />
         {title}

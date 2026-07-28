@@ -80,6 +80,13 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* No mobile o Ranking aparece aqui, antes da Distribuição por Status;
+          no desktop essa cópia fica oculta e ele mantém a posição normal
+          dentro do grid de 3 colunas logo abaixo. */}
+      <div className="md:hidden">
+        <RankingList items={ranking.items} monthLabel={ranking.monthLabel} />
+      </div>
+
       <StatusPieChart items={statusDistribution} />
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -97,7 +104,9 @@ export default async function DashboardPage() {
           emptyLabel="Nenhum card em aberto com responsável definido."
           href={(id) => `/cards?responsavel=${id}&pendente=1`}
         />
-        <RankingList items={ranking.items} monthLabel={ranking.monthLabel} />
+        <div className="hidden md:block">
+          <RankingList items={ranking.items} monthLabel={ranking.monthLabel} />
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
