@@ -75,24 +75,107 @@ async function logCardActivity(
 // Avisa os demais membros da equipe que uma nova tarefa foi criada. Não é
 // crítico para a criação do card em si, então falhas aqui não devem impedir
 // o retorno de sucesso da action.
-async function notifyCardCreated(supabase: SupabaseClient, cardId: string, title: string, creatorId: string) {
+async function notifyCardCreated(
+  supabase: SupabaseClient,
+  cardId: string,
+  title: string,
+  creatorId: string,
+  priorityId: string,
+) {
   try {
-    const [{ data: members }, { data: creator }] = await Promise.all([
+    const [{ data: members }, { data: creator }, { data: priority }] = await Promise.all([
       supabase.from("team_members").select("id, full_name").eq("is_active", true).neq("id", creatorId),
       supabase.from("team_members").select("full_name").eq("id", creatorId).maybeSingle(),
+      supabase.from("priorities").select("key").eq("id", priorityId).maybeSingle(),
     ]);
 
     if (!members || members.length === 0) return;
 
+    const isUrgente = priority?.key === "urgente";
     const payload = {
-      title: "Nova tarefa",
-      body: `${creator?.full_name ?? "Alguém"} adicionou a tarefa "${title}"`,
+      title: isUrgente ? "🔴 Tarefa urgente" : "Nova tarefa",
+      body: `${creator?.full_name ?? "Alguém"} adicionou a tarefa "${title}"${isUrgente ? " (urgente)" : ""}`,
       url: `/cards/${cardId}`,
     };
 
     await Promise.all(members.map((member) => sendPushToMember(supabase, member.id, payload)));
   } catch {
     // notificação é best-effort; erros aqui não devem quebrar a criação do card
+  }
+}
+
+// Avisa especificamente quem foi adicionado como responsável a um card já
+// existente (diferente de notifyCardCreated, que avisa todo mundo).
+async function notifyCardAssigned(
+  supabase: SupabaseClient,
+  cardId: string,
+  title: string,
+  actorId: string | null,
+  assignedIds: string[],
+) {
+  try {
+    const recipientIds = assignedIds.filter((memberId) => memberId !== actorId);
+    if (recipientIds.length === 0) return;
+
+    const { data: actor } = actorId
+      ? await supabase.from("team_members").select("full_name").eq("id", actorId).maybeSingle()
+      : { data: null };
+
+    const payload = {
+      title: "Nova responsabilidade",
+      body: `${actor?.full_name ?? "Alguém"} te atribuiu a tarefa "${title}"`,
+      url: `/cards/${cardId}`,
+    };
+
+    await Promise.all(recipientIds.map((memberId) => sendPushToMember(supabase, memberId, payload)));
+  } catch {
+    // notificação é best-effort; erros aqui não devem quebrar a atualização do card
+  }
+}
+
+// Avisa os demais membros da equipe que uma tarefa foi concluída. Também
+// best-effort: falhas aqui não devem impedir o salvamento do card.
+async function notifyCardCompleted(supabase: SupabaseClient, cardId: string, title: string, actorId: string) {
+  try {
+    const [{ data: members }, { data: actor }] = await Promise.all([
+      supabase.from("team_members").select("id, full_name").eq("is_active", true).neq("id", actorId),
+      supabase.from("team_members").select("full_name").eq("id", actorId).maybeSingle(),
+    ]);
+
+    if (!members || members.length === 0) return;
+
+    const payload = {
+      title: "Tarefa concluída",
+      body: `${actor?.full_name ?? "Alguém"} concluiu a tarefa "${title}"`,
+      url: `/cards/${cardId}`,
+    };
+
+    await Promise.all(members.map((member) => sendPushToMember(supabase, member.id, payload)));
+  } catch {
+    // notificação é best-effort; erros aqui não devem quebrar a atualização do card
+  }
+}
+
+// Avisa os demais membros que um card já concluído voltou a ficar em aberto
+// (retrabalho). Mesmo padrão de notifyCardCompleted, best-effort.
+async function notifyCardReopened(supabase: SupabaseClient, cardId: string, title: string, actorId: string) {
+  try {
+    const [{ data: members }, { data: actor }] = await Promise.all([
+      supabase.from("team_members").select("id, full_name").eq("is_active", true).neq("id", actorId),
+      supabase.from("team_members").select("full_name").eq("id", actorId).maybeSingle(),
+    ]);
+
+    if (!members || members.length === 0) return;
+
+    const payload = {
+      title: "Tarefa reaberta",
+      body: `${actor?.full_name ?? "Alguém"} reabriu a tarefa "${title}"`,
+      url: `/cards/${cardId}`,
+    };
+
+    await Promise.all(members.map((member) => sendPushToMember(supabase, member.id, payload)));
+  } catch {
+    // notificação é best-effort; erros aqui não devem quebrar a atualização do card
   }
 }
 
@@ -134,7 +217,7 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
   await syncCardResponsaveis(supabase, card.id, responsavel_ids);
   await syncCardModelos(supabase, card.id, modelo_ids);
   await logCardActivity(supabase, card.id, user.id, "created");
-  await notifyCardCreated(supabase, card.id, rest.title, user.id);
+  await notifyCardCreated(supabase, card.id, rest.title, user.id, rest.priority_id);
 
   revalidatePath("/cards");
   revalidatePath("/reunioes");
@@ -195,6 +278,12 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
       from_label: fromStatus?.label ?? null,
       to_label: toStatus?.label ?? null,
     });
+
+    if (actorId && toStatus?.key === "concluido" && fromStatus?.key !== "concluido") {
+      await notifyCardCompleted(supabase, id, rest.title, actorId);
+    } else if (actorId && fromStatus?.key === "concluido" && toStatus?.key !== "concluido") {
+      await notifyCardReopened(supabase, id, rest.title, actorId);
+    }
   }
 
   const previousResponsavelIds = new Set((previousResponsaveis ?? []).map((r) => r.team_member_id));
@@ -220,6 +309,10 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
         team_member_id: memberId,
         team_member_name: nameById.get(memberId) ?? null,
       });
+    }
+
+    if (addedIds.length > 0) {
+      await notifyCardAssigned(supabase, id, rest.title, actorId, addedIds);
     }
   }
 
@@ -312,7 +405,7 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
   }
 
   await logCardActivity(supabase, newCard.id, user.id, "created");
-  await notifyCardCreated(supabase, newCard.id, `${original.title} (cópia)`, user.id);
+  await notifyCardCreated(supabase, newCard.id, `${original.title} (cópia)`, user.id, original.priority_id);
 
   revalidatePath("/cards");
   revalidatePath("/reunioes");

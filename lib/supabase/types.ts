@@ -426,6 +426,35 @@ export type Database = {
           },
         ]
       }
+      member_digest_log: {
+        Row: {
+          created_at: string
+          digest_date: string
+          id: string
+          team_member_id: string
+        }
+        Insert: {
+          created_at?: string
+          digest_date: string
+          id?: string
+          team_member_id: string
+        }
+        Update: {
+          created_at?: string
+          digest_date?: string
+          id?: string
+          team_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_digest_log_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modelos: {
         Row: {
           created_at: string

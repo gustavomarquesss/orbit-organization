@@ -14,7 +14,7 @@ const TZ_OFFSET = "-03:00";
 
 type SupabaseService = ReturnType<typeof createServiceClient>;
 
-type EventItem = {
+type ReminderEvent = {
   cardId: string;
   title: string;
   date: string;
@@ -35,55 +35,103 @@ function inWindow(target: Date, now: Date): boolean {
 // Insere a marca de "já avisado" antes de enviar. Se a linha já existir
 // (unique card_id+kind+target_at), a inserção falha e não reenviamos —
 // mesmo que duas execuções do cron se sobreponham.
-async function tryClaim(
-  supabase: SupabaseService,
-  cardId: string,
-  kind: "reminder_1h" | "morning_digest",
-  targetAt: Date,
-): Promise<boolean> {
+async function tryClaimReminder(supabase: SupabaseService, cardId: string, targetAt: Date): Promise<boolean> {
   const { error } = await supabase
     .from("notification_log")
-    .insert({ card_id: cardId, kind, target_at: targetAt.toISOString() });
+    .insert({ card_id: cardId, kind: "reminder_1h", target_at: targetAt.toISOString() });
   return !error;
 }
 
-async function processEvent(
-  supabase: SupabaseService,
-  event: EventItem,
-  now: Date,
-  today: string,
-  digestDue: boolean,
-): Promise<number> {
-  let sent = 0;
-  if (event.recipients.length === 0) return sent;
+// Mesma ideia, mas por pessoa+dia (o resumo diário é agregado, não por
+// card) — unique (team_member_id, digest_date) garante 1 envio por dia.
+async function tryClaimMemberDigest(supabase: SupabaseService, teamMemberId: string, digestDate: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("member_digest_log")
+    .insert({ team_member_id: teamMemberId, digest_date: digestDate });
+  return !error;
+}
 
-  if (event.time) {
-    const eventDateTime = new Date(`${event.date}T${event.time}${TZ_OFFSET}`);
-    const targetAt = new Date(eventDateTime.getTime() - 60 * 60 * 1000);
-    if (inWindow(targetAt, now) && (await tryClaim(supabase, event.cardId, "reminder_1h", targetAt))) {
-      const payload = {
-        title: event.category === "reuniao" ? `Reunião em 1h: ${event.title}` : `Prazo em 1h: ${event.title}`,
-        body: `Hoje às ${event.time.slice(0, 5)}`,
-        url: `/cards/${event.cardId}`,
-      };
-      for (const memberId of event.recipients) {
-        sent += (await sendPushToMember(supabase, memberId, payload)).sent;
-      }
-    }
+async function sendReminder(supabase: SupabaseService, event: ReminderEvent, now: Date): Promise<number> {
+  if (event.recipients.length === 0 || !event.time) return 0;
+
+  const eventDateTime = new Date(`${event.date}T${event.time}${TZ_OFFSET}`);
+  const targetAt = new Date(eventDateTime.getTime() - 60 * 60 * 1000);
+  if (!inWindow(targetAt, now) || !(await tryClaimReminder(supabase, event.cardId, targetAt))) return 0;
+
+  const payload = {
+    title: event.category === "reuniao" ? `Reunião em 1h: ${event.title}` : `Prazo em 1h: ${event.title}`,
+    body: `Hoje às ${event.time.slice(0, 5)}`,
+    url: `/cards/${event.cardId}`,
+  };
+
+  let sent = 0;
+  for (const memberId of event.recipients) {
+    sent += (await sendPushToMember(supabase, memberId, payload)).sent;
+  }
+  return sent;
+}
+
+// Resumo diário único por pessoa ("Seu dia"): tarefas com prazo hoje,
+// reuniões hoje e tarefas atrasadas — tudo num só push, em vez de um
+// aviso por card. Enviado uma vez por dia, e repete nos dias seguintes
+// enquanto ainda houver pendência (o que cobre o caso de tarefa atrasada
+// sendo esquecida).
+async function sendMemberDigests(supabase: SupabaseService, today: string): Promise<number> {
+  const [{ data: prazoCards }, { data: meetingsToday }] = await Promise.all([
+    supabase
+      .from("cards")
+      .select("id, prazo_data, status:statuses!cards_status_id_fkey(key)")
+      .not("prazo_data", "is", null)
+      .lte("prazo_data", today),
+    supabase.from("meeting_details").select("card_id").eq("meeting_date", today),
+  ]);
+
+  const activeCards = (
+    (prazoCards ?? []) as unknown as { id: string; prazo_data: string; status: { key: string } | null }[]
+  ).filter((c) => c.status?.key !== "concluido" && c.status?.key !== "arquivado");
+
+  const todayCardIds = new Set(activeCards.filter((c) => c.prazo_data === today).map((c) => c.id));
+  const overdueCardIds = new Set(activeCards.filter((c) => c.prazo_data < today).map((c) => c.id));
+  const meetingCardIds = (meetingsToday ?? []).map((m) => m.card_id);
+
+  const prazoCardIds = [...todayCardIds, ...overdueCardIds];
+
+  const [{ data: responsaveis }, { data: participants }] = await Promise.all([
+    prazoCardIds.length > 0
+      ? supabase.from("card_responsaveis").select("card_id, team_member_id").in("card_id", prazoCardIds)
+      : Promise.resolve({ data: [] as { card_id: string; team_member_id: string }[] }),
+    meetingCardIds.length > 0
+      ? supabase.from("meeting_participants").select("card_id, team_member_id").in("card_id", meetingCardIds)
+      : Promise.resolve({ data: [] as { card_id: string; team_member_id: string }[] }),
+  ]);
+
+  const counts = new Map<string, { hoje: number; atrasada: number; reuniao: number }>();
+  const bump = (memberId: string, key: "hoje" | "atrasada" | "reuniao") => {
+    const current = counts.get(memberId) ?? { hoje: 0, atrasada: 0, reuniao: 0 };
+    current[key] += 1;
+    counts.set(memberId, current);
+  };
+
+  for (const r of responsaveis ?? []) {
+    if (todayCardIds.has(r.card_id)) bump(r.team_member_id, "hoje");
+    if (overdueCardIds.has(r.card_id)) bump(r.team_member_id, "atrasada");
+  }
+  for (const p of participants ?? []) {
+    bump(p.team_member_id, "reuniao");
   }
 
-  if (digestDue && event.date === today) {
-    const digestAnchor = new Date(`${today}T${DIGEST_HOUR_BRT}${TZ_OFFSET}`);
-    if (await tryClaim(supabase, event.cardId, "morning_digest", digestAnchor)) {
-      const payload = {
-        title: event.category === "reuniao" ? `Hoje: Reunião — ${event.title}` : `Hoje: Prazo — ${event.title}`,
-        body: event.time ? `Às ${event.time.slice(0, 5)}` : "Sem horário definido",
-        url: `/cards/${event.cardId}`,
-      };
-      for (const memberId of event.recipients) {
-        sent += (await sendPushToMember(supabase, memberId, payload)).sent;
-      }
-    }
+  let sent = 0;
+  for (const [memberId, count] of counts) {
+    if (count.hoje + count.atrasada + count.reuniao === 0) continue;
+    if (!(await tryClaimMemberDigest(supabase, memberId, today))) continue;
+
+    const parts: string[] = [];
+    if (count.hoje > 0) parts.push(`${count.hoje} tarefa${count.hoje > 1 ? "s" : ""} para hoje`);
+    if (count.reuniao > 0) parts.push(`${count.reuniao} reunião${count.reuniao > 1 ? "ões" : ""} hoje`);
+    if (count.atrasada > 0) parts.push(`${count.atrasada} atrasada${count.atrasada > 1 ? "s" : ""}`);
+
+    const payload = { title: "Seu dia", body: parts.join(", "), url: "/cards" };
+    sent += (await sendPushToMember(supabase, memberId, payload)).sent;
   }
 
   return sent;
@@ -102,7 +150,7 @@ async function handle(request: Request) {
   const digestAnchor = new Date(`${today}T${DIGEST_HOUR_BRT}${TZ_OFFSET}`);
   const digestDue = inWindow(digestAnchor, now);
 
-  const events: EventItem[] = [];
+  const events: ReminderEvent[] = [];
 
   const { data: meetings } = await supabase
     .from("meeting_details")
@@ -172,7 +220,11 @@ async function handle(request: Request) {
 
   let totalSent = 0;
   for (const event of events) {
-    totalSent += await processEvent(supabase, event, now, today, digestDue);
+    totalSent += await sendReminder(supabase, event, now);
+  }
+
+  if (digestDue) {
+    totalSent += await sendMemberDigests(supabase, today);
   }
 
   return NextResponse.json({ checked: events.length, sent: totalSent, digestDue });
