@@ -37,6 +37,9 @@ export async function sendPushToMember(
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
           JSON.stringify(payload),
+          // "high" pede entrega imediata ao serviço de push (no iOS, sem isso
+          // a Apple pode agrupar/atrasar o push para economizar bateria).
+          { urgency: "high", TTL: 3600 },
         );
         sent += 1;
       } catch (error) {
