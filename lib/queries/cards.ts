@@ -82,6 +82,7 @@ export type CardFilters = {
   statusId?: string;
   priorityId?: string;
   responsavelId?: string;
+  criadoPorId?: string;
   modeloId?: string;
   tagIds?: string[];
   from?: string;
@@ -132,6 +133,7 @@ export async function getCardsWithRelations(filters: CardFilters = {}): Promise<
   if (filters.excludeCardTypeId) query = query.neq("card_type_id", filters.excludeCardTypeId);
   if (filters.statusId) query = query.eq("status_id", filters.statusId);
   if (filters.priorityId) query = query.eq("priority_id", filters.priorityId);
+  if (filters.criadoPorId) query = query.eq("created_by", filters.criadoPorId);
   if (filters.from) query = query.gte("created_at", filters.from);
   if (filters.to) query = query.lte("created_at", `${filters.to}T23:59:59`);
   if (cardIdsFromTags) query = query.in("id", cardIdsFromTags);

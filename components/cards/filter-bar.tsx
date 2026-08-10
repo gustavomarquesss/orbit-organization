@@ -14,6 +14,7 @@ const FILTER_KEYS = [
   "status",
   "prioridade",
   "responsavel",
+  "criadoPor",
   "modelo",
   "tag",
   "de",
@@ -72,6 +73,12 @@ export function FilterBar({ lookups }: { lookups: CardLookups }) {
         value={searchParams.get("responsavel") ?? ""}
         onChange={(v) => setParam("responsavel", v)}
         placeholder="Responsável"
+        options={lookups.teamMembers.map((m) => ({ id: m.id, label: m.full_name }))}
+      />
+      <FilterSelect
+        value={searchParams.get("criadoPor") ?? ""}
+        onChange={(v) => setParam("criadoPor", v)}
+        placeholder="Criado por"
         options={lookups.teamMembers.map((m) => ({ id: m.id, label: m.full_name }))}
       />
       <FilterSelect

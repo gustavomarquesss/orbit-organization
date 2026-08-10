@@ -24,6 +24,7 @@ export default async function FinanceiroPage({
     statusId: get("status"),
     priorityId: get("prioridade"),
     responsavelId: get("responsavel"),
+    criadoPorId: get("criadoPor"),
     modeloId: get("modelo"),
     tagIds: get("tag") ? [get("tag") as string] : undefined,
     from: get("de"),
