@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { signIn, type SignInState } from "@/lib/actions/auth";
@@ -19,7 +20,15 @@ export function LoginForm() {
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Senha</Label>
+          <Link
+            href="/esqueci-senha"
+            className="text-xs text-muted-foreground underline underline-offset-4"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"

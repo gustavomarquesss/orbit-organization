@@ -27,7 +27,17 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+  const pathname = request.nextUrl.pathname;
+  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/esqueci-senha");
+  // /redefinir-senha só existe a partir de um link de recuperação: o token de acesso vem no
+  // hash da URL (nunca chega ao servidor) e é processado no client, então a sessão pode ainda
+  // não existir na primeira requisição. Por isso essa rota nunca é redirecionada nos dois
+  // sentidos — nem pra /login por falta de sessão, nem pra / por já haver uma.
+  const isRecoveryRoute = pathname.startsWith("/redefinir-senha");
+
+  if (isRecoveryRoute) {
+    return supabaseResponse;
+  }
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
