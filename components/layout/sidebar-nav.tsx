@@ -5,15 +5,15 @@ import { usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { isActive, mainNavItems, settingsNavItems } from "./nav-items";
+import { adminNavItem, isActive, mainNavItems, settingsNavItems, visibleNavItems, type NavAccess } from "./nav-items";
 
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarNav({ access, onNavigate }: { access: NavAccess; onNavigate?: () => void }) {
   const pathname = usePathname();
   const settingsActive = pathname.startsWith("/configuracoes");
 
   return (
     <nav className="flex flex-col gap-1 py-2">
-      {mainNavItems.map((item) => {
+      {[...visibleNavItems(mainNavItems, access), ...(access.isAdmin ? [adminNavItem] : [])].map((item) => {
         const Icon = item.icon;
         const active = isActive(pathname, item.href);
         return (
@@ -46,7 +46,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         Configurações
       </div>
       <div className="ml-[1.625rem] flex flex-col gap-0.5 border-l border-sidebar-border pl-3">
-        {settingsNavItems.map((item) => {
+        {visibleNavItems(settingsNavItems, access).map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link

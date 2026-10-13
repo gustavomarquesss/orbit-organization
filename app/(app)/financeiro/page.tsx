@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { CardsExplorer } from "@/components/cards/cards-explorer";
 import { NovoGastoButton } from "@/components/cards/novo-gasto-button";
 import { FinanceiroSummary } from "@/components/financeiro/financeiro-summary";
+import { requirePermission } from "@/lib/auth/session";
 import { getCardLookups, getCardsWithRelations, type CardFilters } from "@/lib/queries/cards";
 import { getFinanceiroMetas, getFinanceiroSummary } from "@/lib/queries/financeiro";
 
@@ -10,6 +11,7 @@ export default async function FinanceiroPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePermission("financeiro");
   const sp = await searchParams;
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
 

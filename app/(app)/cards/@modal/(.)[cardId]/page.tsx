@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import { canViewCardOfType } from "@/lib/auth/permissions";
+import { getAccess } from "@/lib/auth/session";
 import { getCardActivity, getCardById, getCardLookups } from "@/lib/queries/cards";
 import { getMeetingDetails } from "@/lib/queries/meetings";
 import { getFinanceiroDetails } from "@/lib/queries/financeiro";
@@ -14,6 +16,9 @@ export default async function InterceptedCardModal({
   const [card, lookups, activity] = await Promise.all([getCardById(cardId), getCardLookups(), getCardActivity(cardId)]);
 
   if (!card) notFound();
+
+  const access = await getAccess();
+  if (!access || !canViewCardOfType(access, card.card_type?.key)) notFound();
 
   const meetingDetails = card.card_type?.key === "reuniao" ? await getMeetingDetails(cardId) : null;
   const financeiroDetails = card.card_type?.key === "financeiro" ? await getFinanceiroDetails(cardId) : null;

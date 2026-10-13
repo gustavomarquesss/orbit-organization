@@ -5,15 +5,14 @@ import { usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { isActive, mainNavItems } from "./nav-items";
+import { isActive, mainNavItems, visibleNavItems, type NavAccess } from "./nav-items";
 
-const bottomNavItems = [
-  ...mainNavItems,
-  { href: "/configuracoes", label: "Config.", icon: Settings },
-];
-
-export function MobileBottomNav() {
+export function MobileBottomNav({ access }: { access: NavAccess }) {
   const pathname = usePathname();
+  const bottomNavItems = [
+    ...visibleNavItems(mainNavItems, access),
+    { href: "/configuracoes", label: "Config.", icon: Settings },
+  ];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden">

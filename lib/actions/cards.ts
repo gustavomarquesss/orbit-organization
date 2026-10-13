@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { cardFormSchema, type CardFormInput } from "@/lib/validations/card";
 import { getCardActivity, type CardActivityEntry } from "@/lib/queries/cards";
 import { sendPushToMember } from "@/lib/push/notify";
+import { can } from "@/lib/auth/permissions";
+import { checkPermission, getAccess } from "@/lib/auth/session";
 import type { Json } from "@/lib/supabase/types";
 
 export async function fetchCardActivity(cardId: string): Promise<CardActivityEntry[]> {
@@ -15,6 +17,32 @@ export async function fetchCardActivity(cardId: string): Promise<CardActivityEnt
 export type CardActionResult = { error?: string; id?: string };
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+// Cards do tipo Financeiro exigem "editar financeiro"; os demais, "criar e editar cards".
+// Em edição/duplicação checa também o tipo atual do card, para não dar para contornar
+// trocando o tipo no formulário.
+async function checkCardWriteAccess(
+  supabase: SupabaseClient,
+  typeIds: string[],
+  existingCardId?: string,
+): Promise<string | null> {
+  const access = await getAccess();
+  if (!access) return "Sessão expirada. Entre novamente.";
+
+  const ids = new Set(typeIds);
+  if (existingCardId) {
+    const { data: existing } = await supabase.from("cards").select("card_type_id").eq("id", existingCardId).maybeSingle();
+    if (existing) ids.add(existing.card_type_id);
+  }
+
+  const { data: types } = await supabase.from("card_types").select("key").in("id", [...ids]);
+  for (const type of types ?? []) {
+    if (!can(access, type.key === "financeiro" ? "financeiro_edit" : "cards_edit")) {
+      return "Você não tem permissão para fazer isso.";
+    }
+  }
+  return null;
+}
 
 async function syncCardTags(supabase: SupabaseClient, cardId: string, tagIds: string[]) {
   await supabase.from("card_tags").delete().eq("card_id", cardId);
@@ -191,6 +219,9 @@ export async function createCard(input: CardFormInput): Promise<CardActionResult
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre novamente." };
 
+  const denied = await checkCardWriteAccess(supabase, [parsed.data.card_type_id]);
+  if (denied) return { error: denied };
+
   const { tag_ids, responsavel_ids, modelo_ids, description, observacoes, recorrencia, prazo_data, prazo_hora, ...rest } =
     parsed.data;
 
@@ -237,6 +268,9 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
     data: { user },
   } = await supabase.auth.getUser();
   const actorId = user?.id ?? null;
+
+  const denied = await checkCardWriteAccess(supabase, [parsed.data.card_type_id], id);
+  if (denied) return { error: denied };
 
   const { tag_ids, responsavel_ids, modelo_ids, description, observacoes, recorrencia, prazo_data, prazo_hora, ...rest } =
     parsed.data;
@@ -326,6 +360,9 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
 }
 
 export async function deleteCard(id: string): Promise<CardActionResult> {
+  const denied = await checkPermission("cards_delete");
+  if (denied) return { error: denied };
+
   const supabase = await createClient();
   const { error } = await supabase.from("cards").delete().eq("id", id);
   if (error) return { error: "Não foi possível excluir o card." };
@@ -343,6 +380,9 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre novamente." };
+
+  const denied = await checkCardWriteAccess(supabase, [], id);
+  if (denied) return { error: denied };
 
   const { data: original, error: fetchError } = await supabase
     .from("cards")
@@ -416,6 +456,9 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
 
 export async function bulkDeleteCards(ids: string[]): Promise<{ error?: string }> {
   if (ids.length === 0) return {};
+  const denied = await checkPermission("cards_delete");
+  if (denied) return { error: denied };
+
   const supabase = await createClient();
   const { error } = await supabase.from("cards").delete().in("id", ids);
   if (error) return { error: "Não foi possível excluir os cards selecionados." };

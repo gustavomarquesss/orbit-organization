@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/brand/logo";
 import { SidebarNav } from "./sidebar-nav";
+import type { NavAccess } from "./nav-items";
 
-export function MobileNav() {
+export function MobileNav({ access }: { access: NavAccess }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -22,7 +23,7 @@ export function MobileNav() {
           <Logo />
         </SheetTitle>
         <div className="px-3 pb-4">
-          <SidebarNav onNavigate={() => setOpen(false)} />
+          <SidebarNav access={access} onNavigate={() => setOpen(false)} />
         </div>
       </SheetContent>
     </Sheet>

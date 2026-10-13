@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { checkPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export type LookupTable = "card_types" | "statuses" | "priorities" | "modelos" | "tags";
@@ -16,6 +17,9 @@ export async function createLookupItem(
   table: LookupTable,
   data: Record<string, unknown>,
 ): Promise<LookupActionResult> {
+  const denied = await checkPermission("configuracoes");
+  if (denied) return { error: denied };
+
   const supabase = await createClient();
   const { error } = await supabase.from(table).insert(data as never);
 
@@ -31,6 +35,9 @@ export async function updateLookupItem(
   id: string,
   data: Record<string, unknown>,
 ): Promise<LookupActionResult> {
+  const denied = await checkPermission("configuracoes");
+  if (denied) return { error: denied };
+
   const supabase = await createClient();
   const { error } = await supabase.from(table).update(data as never).eq("id", id);
 
@@ -48,6 +55,9 @@ export async function toggleLookupActive(
 }
 
 export async function deleteLookupItem(table: LookupTable, id: string): Promise<LookupActionResult> {
+  const denied = await checkPermission("configuracoes");
+  if (denied) return { error: denied };
+
   const supabase = await createClient();
   const { error } = await supabase.from(table).delete().eq("id", id);
 

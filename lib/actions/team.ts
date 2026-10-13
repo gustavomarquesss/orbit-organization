@@ -14,10 +14,9 @@ function getAdminClient() {
 const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
-// Edição do próprio perfil (nome + foto). Diferente de inviteTeamMember/
-// toggleTeamMemberActive, aqui a permissão é sempre restrita a auth.uid() —
+// Edição do próprio perfil (nome + foto). A permissão é sempre restrita a auth.uid() —
 // mesmo usando a service role key (que ignora RLS), ninguém pode editar o
-// perfil de outra pessoa por essa action.
+// perfil de outra pessoa por essa action. Gestão de outros usuários fica em lib/actions/admin.ts.
 export async function updateMyProfile(formData: FormData): Promise<{ error?: string; avatarUrl?: string }> {
   const supabase = await createClient();
   const {
@@ -59,31 +58,6 @@ export async function updateMyProfile(formData: FormData): Promise<{ error?: str
   revalidatePath("/perfil");
   revalidatePath("/");
   revalidatePath("/cards");
-  revalidatePath("/configuracoes/equipe");
+  revalidatePath("/admin");
   return { avatarUrl: update.avatar_url };
-}
-
-export async function inviteTeamMember(email: string, fullName: string): Promise<{ error?: string }> {
-  const trimmedEmail = email.trim();
-  if (!trimmedEmail) return { error: "Informe um email." };
-
-  const admin = getAdminClient();
-  const { error } = await admin.auth.admin.inviteUserByEmail(trimmedEmail, {
-    data: fullName.trim() ? { full_name: fullName.trim() } : undefined,
-  });
-
-  if (error) return { error: "Não foi possível convidar essa pessoa." };
-
-  revalidatePath("/configuracoes/equipe");
-  return {};
-}
-
-export async function toggleTeamMemberActive(id: string, isActive: boolean): Promise<{ error?: string }> {
-  const admin = getAdminClient();
-  const { error } = await admin.from("team_members").update({ is_active: isActive }).eq("id", id);
-
-  if (error) return { error: "Não foi possível atualizar." };
-
-  revalidatePath("/configuracoes/equipe");
-  return {};
 }

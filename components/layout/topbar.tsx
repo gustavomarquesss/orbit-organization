@@ -6,21 +6,25 @@ import { QuickAddCardButton } from "@/components/cards/quick-add-card-button";
 import { SearchTriggerButton } from "@/components/search/search-trigger-button";
 import { TeamMemberAvatar } from "@/components/team/team-member-avatar";
 import { MobileNav } from "./mobile-nav";
+import { can } from "@/lib/auth/permissions";
+import type { NavAccess } from "./nav-items";
 
 export function Topbar({
   email,
   member,
+  access,
 }: {
+  access: NavAccess;
   email: string;
   member?: { full_name: string; avatar_url: string | null; avatar_color: string } | null;
 }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4 md:px-6">
-      <MobileNav />
+      <MobileNav access={access} />
 
       <SearchTriggerButton />
 
-      <QuickAddCardButton />
+      {can(access, "cards_edit") ? <QuickAddCardButton /> : null}
 
       <div className="ml-auto flex items-center gap-3 text-sm text-muted-foreground">
         <Link href="/perfil" className="flex items-center gap-2 hover:text-foreground">

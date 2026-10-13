@@ -630,6 +630,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          permissions: Json
         }
         Insert: {
           avatar_color?: string
@@ -639,6 +640,7 @@ export type Database = {
           full_name: string
           id: string
           is_active?: boolean
+          permissions?: Json
         }
         Update: {
           avatar_color?: string
@@ -648,6 +650,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          permissions?: Json
         }
         Relationships: []
       }

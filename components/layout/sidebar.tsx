@@ -1,14 +1,15 @@
 import { Logo } from "@/components/brand/logo";
 import { SidebarNav } from "./sidebar-nav";
+import type { NavAccess } from "./nav-items";
 
-export function Sidebar() {
+export function Sidebar({ access }: { access: NavAccess }) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
       <div className="flex h-14 shrink-0 items-center px-4 text-sm text-sidebar-foreground">
         <Logo />
       </div>
       <div className="flex-1 overflow-y-auto px-3 pb-4">
-        <SidebarNav />
+        <SidebarNav access={access} />
       </div>
     </aside>
   );

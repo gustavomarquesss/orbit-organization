@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { checkPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import {
   financeiroFieldsSchema,
@@ -16,6 +17,9 @@ export async function upsertFinanceiroDetails(
   cardId: string,
   input: FinanceiroFieldsInput,
 ): Promise<{ error?: string }> {
+  const denied = await checkPermission("financeiro_edit");
+  if (denied) return { error: denied };
+
   const parsed = financeiroFieldsSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados do lançamento inválidos." };
@@ -38,6 +42,9 @@ export async function upsertFinanceiroDetails(
 }
 
 export async function upsertFinanceiroMetas(input: FinanceiroMetasInput): Promise<{ error?: string }> {
+  const denied = await checkPermission("financeiro_edit");
+  if (denied) return { error: denied };
+
   const parsed = financeiroMetasSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Metas inválidas." };

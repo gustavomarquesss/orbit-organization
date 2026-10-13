@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { CardsExplorer } from "@/components/cards/cards-explorer";
+import { requirePermission } from "@/lib/auth/session";
 import { getCardLookups, getCardsWithRelations, type CardFilters } from "@/lib/queries/cards";
 
 export default async function ReunioesPage({
@@ -7,6 +8,7 @@ export default async function ReunioesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePermission("reunioes");
   const sp = await searchParams;
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
 

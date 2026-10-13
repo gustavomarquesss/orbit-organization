@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { checkPermission } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { meetingFieldsSchema, type MeetingFieldsInput } from "@/lib/validations/meeting";
 
@@ -9,6 +10,9 @@ export async function upsertMeetingDetails(
   cardId: string,
   input: MeetingFieldsInput,
 ): Promise<{ error?: string }> {
+  const denied = await checkPermission("cards_edit");
+  if (denied) return { error: denied };
+
   const parsed = meetingFieldsSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados de reunião inválidos." };
@@ -43,6 +47,7 @@ export async function upsertMeetingDetails(
 }
 
 export async function deleteMeetingDetails(cardId: string): Promise<void> {
+  if (await checkPermission("cards_edit")) return;
   const supabase = await createClient();
   await supabase.from("meeting_details").delete().eq("card_id", cardId);
 }

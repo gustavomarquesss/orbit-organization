@@ -9,6 +9,8 @@ import { RankingList } from "@/components/dashboard/ranking-list";
 import { StaleCardsList } from "@/components/dashboard/stale-cards-list";
 import { ExportButton } from "@/components/dashboard/export-button";
 import { StatusPieChart } from "@/components/dashboard/status-pie-chart";
+import { can } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
 import { getCardLookups } from "@/lib/queries/cards";
 import {
   getDashboardStats,
@@ -23,6 +25,8 @@ import {
 } from "@/lib/queries/dashboard";
 
 export default async function DashboardPage() {
+  const access = await requirePermission("dashboard");
+
   const [
     stats,
     recentCards,
@@ -52,7 +56,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" actions={<ExportButton />} />
+      <PageHeader title="Dashboard" actions={can(access, "export") ? <ExportButton /> : undefined} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Total de Cards" value={stats.total} icon={LayoutGrid} href="/cards" />

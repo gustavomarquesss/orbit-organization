@@ -1,5 +1,7 @@
 "use server";
 
+import { getAccess } from "@/lib/auth/session";
+import { canViewCardOfType } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 
 export type SearchResult = {
@@ -41,6 +43,9 @@ function mapRow(row: RawResult): SearchResult {
 export async function searchCards(query: string): Promise<SearchResult[]> {
   const q = query.trim();
   if (!q) return [];
+
+  const access = await getAccess();
+  if (!access) return [];
 
   const supabase = await createClient();
   const results = new Map<string, SearchResult>();
@@ -131,6 +136,6 @@ export async function searchCards(query: string): Promise<SearchResult[]> {
 
   // Cards do tipo Financeiro só aparecem na aba Financeiro, nunca na busca global.
   return Array.from(results.values())
-    .filter((r) => r.typeKey !== "financeiro")
+    .filter((r) => r.typeKey !== "financeiro" && canViewCardOfType(access, r.typeKey))
     .slice(0, 20);
 }

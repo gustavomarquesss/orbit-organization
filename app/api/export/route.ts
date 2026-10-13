@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 
+import { checkPermission } from "@/lib/auth/session";
 import { getCardLookups, getCardsWithRelations } from "@/lib/queries/cards";
 import {
   getDashboardStats,
@@ -9,6 +10,9 @@ import {
 } from "@/lib/queries/dashboard";
 
 export async function GET() {
+  const denied = await checkPermission("export");
+  if (denied) return new Response(denied, { status: 403 });
+
   const lookups = await getCardLookups();
   const financeiroId = lookups.cardTypes.find((t) => t.key === "financeiro")?.id;
 
