@@ -3,10 +3,8 @@
 import { useRouter } from "next/navigation";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CardForm } from "@/components/cards/card-form";
-import { FinanceiroForm } from "@/components/cards/financeiro-form";
-import { CardHistoryPanel } from "@/components/cards/card-history-panel";
+import { CardTabs } from "@/components/cards/card-tabs";
+import type { CardExtras, CardViewer } from "@/lib/queries/card-extras";
 import type { CardActivityEntry, CardLookups, CardWithRelations } from "@/lib/queries/cards";
 import type { MeetingDetails } from "@/lib/queries/meetings";
 import type { FinanceiroDetails } from "@/lib/queries/financeiro";
@@ -17,12 +15,16 @@ export function CardDetailModal({
   meetingDetails,
   financeiroDetails,
   activity,
+  extras,
+  viewer,
 }: {
   card: CardWithRelations;
   lookups: CardLookups;
   meetingDetails: MeetingDetails | null;
   financeiroDetails: FinanceiroDetails | null;
   activity: CardActivityEntry[];
+  extras: CardExtras;
+  viewer: CardViewer | null;
 }) {
   const router = useRouter();
   const isFinanceiro = card.card_type?.key === "financeiro";
@@ -34,42 +36,28 @@ export function CardDetailModal({
 
   return (
     <Dialog open onOpenChange={(open) => !open && close()}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
+        {card.cover_color ? (
+          <div
+            className="-mx-4 -mt-4 h-2 rounded-t-xl"
+            style={{ background: `linear-gradient(90deg, ${card.cover_color}, ${card.cover_color}88)` }}
+          />
+        ) : null}
         <DialogHeader>
           <DialogTitle>
             {isFinanceiro ? financeiroLabel : "Editar Card"} #{card.card_number}
           </DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="detalhes">
-          <TabsList>
-            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
-          </TabsList>
-          <TabsContent value="detalhes">
-            {isFinanceiro ? (
-              <FinanceiroForm
-                lookups={lookups}
-                financeiroTypeId={card.card_type!.id}
-                card={card}
-                financeiroDetails={financeiroDetails}
-                onSuccess={close}
-                onCancel={close}
-              />
-            ) : (
-              <CardForm
-                key={`${card.id}-${card.updated_at}`}
-                lookups={lookups}
-                card={card}
-                meetingDetails={meetingDetails}
-                onSuccess={close}
-                onCancel={close}
-              />
-            )}
-          </TabsContent>
-          <TabsContent value="historico">
-            <CardHistoryPanel entries={activity} />
-          </TabsContent>
-        </Tabs>
+        <CardTabs
+          card={card}
+          lookups={lookups}
+          meetingDetails={meetingDetails}
+          financeiroDetails={financeiroDetails}
+          activity={activity}
+          extras={extras}
+          viewer={viewer}
+          onDone={close}
+        />
       </DialogContent>
     </Dialog>
   );

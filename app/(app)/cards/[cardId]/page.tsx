@@ -5,6 +5,7 @@ import { CardDetailPageForm } from "@/components/cards/card-detail-page-form";
 import { canViewCardOfType } from "@/lib/auth/permissions";
 import { getAccess } from "@/lib/auth/session";
 import { getCardActivity, getCardById, getCardLookups } from "@/lib/queries/cards";
+import { getCardExtras, getCardViewer } from "@/lib/queries/card-extras";
 import { getMeetingDetails } from "@/lib/queries/meetings";
 import { getFinanceiroDetails } from "@/lib/queries/financeiro";
 
@@ -14,7 +15,13 @@ export default async function CardDetailPage({
   params: Promise<{ cardId: string }>;
 }) {
   const { cardId } = await params;
-  const [card, lookups, activity] = await Promise.all([getCardById(cardId), getCardLookups(), getCardActivity(cardId)]);
+  const [card, lookups, activity, extras, viewer] = await Promise.all([
+    getCardById(cardId),
+    getCardLookups(),
+    getCardActivity(cardId),
+    getCardExtras(cardId),
+    getCardViewer(),
+  ]);
 
   if (!card) notFound();
 
@@ -25,7 +32,7 @@ export default async function CardDetailPage({
   const financeiroDetails = card.card_type?.key === "financeiro" ? await getFinanceiroDetails(cardId) : null;
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="mx-auto max-w-2xl">
       <PageHeader
         title={`#${card.card_number} · ${card.title}`}
         description={
@@ -42,6 +49,8 @@ export default async function CardDetailPage({
         meetingDetails={meetingDetails}
         financeiroDetails={financeiroDetails}
         activity={activity}
+        extras={extras}
+        viewer={viewer}
       />
     </div>
   );

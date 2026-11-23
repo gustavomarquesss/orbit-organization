@@ -22,13 +22,14 @@ export function SidebarNav({ access, onNavigate }: { access: NavAccess; onNaviga
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all",
               active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                ? "bg-gradient-to-r from-primary/25 via-primary/10 to-transparent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground/70 hover:translate-x-0.5 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
             )}
           >
-            <Icon className="size-4" />
+            {active ? <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-primary" /> : null}
+            <Icon className={cn("size-4 transition-transform group-hover:scale-110", item.tone)} />
             {item.label}
           </Link>
         );
@@ -56,7 +57,7 @@ export function SidebarNav({ access, onNavigate }: { access: NavAccess; onNaviga
               className={cn(
                 "rounded-md px-2.5 py-1.5 text-sm transition-colors",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  ? "bg-primary/15 font-medium text-sidebar-accent-foreground"
                   : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               )}
             >

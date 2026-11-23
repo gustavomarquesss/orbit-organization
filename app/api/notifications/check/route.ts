@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 // notification_log é quem garante isso, não a janela em si).
 const WINDOW_MS = 16 * 60 * 1000;
 const DIGEST_HOUR_BRT = "08:00:00";
+const CHECKLIST_EVENING_HOUR_BRT = "18:00:00";
 const TZ_OFFSET = "-03:00";
 
 type SupabaseService = ReturnType<typeof createServiceClient>;
@@ -44,11 +45,90 @@ async function tryClaimReminder(supabase: SupabaseService, cardId: string, targe
 
 // Mesma ideia, mas por pessoa+dia (o resumo diário é agregado, não por
 // card) — unique (team_member_id, digest_date) garante 1 envio por dia.
-async function tryClaimMemberDigest(supabase: SupabaseService, teamMemberId: string, digestDate: string): Promise<boolean> {
+async function tryClaimMemberDigest(
+  supabase: SupabaseService,
+  teamMemberId: string,
+  digestDate: string,
+  kind?: "checklist_evening",
+): Promise<boolean> {
+  // O resumo da manhã não envia "kind" (o padrão do banco é "morning"), então segue
+  // funcionando mesmo antes da migration 0018; o lembrete da noite só envia depois dela.
   const { error } = await supabase
     .from("member_digest_log")
-    .insert({ team_member_id: teamMemberId, digest_date: digestDate });
+    .insert({ team_member_id: teamMemberId, digest_date: digestDate, ...(kind ? { kind } : {}) });
   return !error;
+}
+
+type PendingChecklist = { cardId: string; title: string; done: number; total: number };
+
+// Checklists que zeram todo dia e ainda têm item por marcar hoje, agrupados por responsável.
+// Cards concluídos/arquivados não entram. Sem a migration 0017 devolve vazio.
+async function getPendingDailyChecklists(
+  supabase: SupabaseService,
+  today: string,
+): Promise<Map<string, PendingChecklist[]>> {
+  const { data, error } = await supabase
+    .from("card_checklists")
+    .select(
+      "card_id, card_checklist_items(done_on), card:cards!card_checklists_card_id_fkey(title, status:statuses!cards_status_id_fkey(key), card_responsaveis(team_member_id))",
+    )
+    .eq("repeat_daily", true);
+  if (error || !data) return new Map();
+
+  type Row = {
+    card_id: string;
+    card_checklist_items: { done_on: string | null }[];
+    card: {
+      title: string;
+      status: { key: string } | null;
+      card_responsaveis: { team_member_id: string }[];
+    } | null;
+  };
+
+  const perCard = new Map<string, PendingChecklist & { members: string[] }>();
+  for (const row of data as unknown as Row[]) {
+    const card = row.card;
+    const total = row.card_checklist_items.length;
+    if (!card || total === 0 || card.status?.key === "concluido" || card.status?.key === "arquivado") continue;
+    const done = row.card_checklist_items.filter((i) => i.done_on === today).length;
+    const current = perCard.get(row.card_id) ?? {
+      cardId: row.card_id,
+      title: card.title,
+      done: 0,
+      total: 0,
+      members: card.card_responsaveis.map((r) => r.team_member_id),
+    };
+    current.done += done;
+    current.total += total;
+    perCard.set(row.card_id, current);
+  }
+
+  const byMember = new Map<string, PendingChecklist[]>();
+  for (const { members, ...pending } of perCard.values()) {
+    if (pending.done >= pending.total) continue;
+    for (const memberId of members) byMember.set(memberId, [...(byMember.get(memberId) ?? []), pending]);
+  }
+  return byMember;
+}
+
+// Fim do dia: lembra quem ainda tem checklist diário incompleto. Um push por pessoa por dia.
+async function sendChecklistEveningReminders(supabase: SupabaseService, today: string): Promise<number> {
+  const pending = await getPendingDailyChecklists(supabase, today);
+
+  let sent = 0;
+  for (const [memberId, lists] of pending) {
+    if (!(await tryClaimMemberDigest(supabase, memberId, today, "checklist_evening"))) continue;
+
+    const shown = lists.slice(0, 2).map((l) => `${l.title} (${l.done}/${l.total})`);
+    const extra = lists.length > 2 ? ` e mais ${lists.length - 2}` : "";
+    const payload = {
+      title: "Checklist do dia incompleto",
+      body: `${shown.join(", ")}${extra}`,
+      url: lists.length === 1 ? `/cards/${lists[0].cardId}` : "/cards",
+    };
+    sent += (await sendPushToMember(supabase, memberId, payload)).sent;
+  }
+  return sent;
 }
 
 async function sendReminder(supabase: SupabaseService, event: ReminderEvent, now: Date): Promise<number> {
@@ -105,9 +185,9 @@ async function sendMemberDigests(supabase: SupabaseService, today: string): Prom
       : Promise.resolve({ data: [] as { card_id: string; team_member_id: string }[] }),
   ]);
 
-  const counts = new Map<string, { hoje: number; atrasada: number; reuniao: number }>();
-  const bump = (memberId: string, key: "hoje" | "atrasada" | "reuniao") => {
-    const current = counts.get(memberId) ?? { hoje: 0, atrasada: 0, reuniao: 0 };
+  const counts = new Map<string, { hoje: number; atrasada: number; reuniao: number; checklist: number }>();
+  const bump = (memberId: string, key: "hoje" | "atrasada" | "reuniao" | "checklist") => {
+    const current = counts.get(memberId) ?? { hoje: 0, atrasada: 0, reuniao: 0, checklist: 0 };
     current[key] += 1;
     counts.set(memberId, current);
   };
@@ -119,15 +199,20 @@ async function sendMemberDigests(supabase: SupabaseService, today: string): Prom
   for (const p of participants ?? []) {
     bump(p.team_member_id, "reuniao");
   }
+  // De manhã tudo está desmarcado: cada checklist diário (de card em aberto) é uma tarefa do dia.
+  for (const [memberId, lists] of await getPendingDailyChecklists(supabase, today)) {
+    for (let i = 0; i < lists.length; i++) bump(memberId, "checklist");
+  }
 
   let sent = 0;
   for (const [memberId, count] of counts) {
-    if (count.hoje + count.atrasada + count.reuniao === 0) continue;
+    if (count.hoje + count.atrasada + count.reuniao + count.checklist === 0) continue;
     if (!(await tryClaimMemberDigest(supabase, memberId, today))) continue;
 
     const parts: string[] = [];
     if (count.hoje > 0) parts.push(`${count.hoje} tarefa${count.hoje > 1 ? "s" : ""} para hoje`);
     if (count.reuniao > 0) parts.push(`${count.reuniao} reunião${count.reuniao > 1 ? "ões" : ""} hoje`);
+    if (count.checklist > 0) parts.push(`${count.checklist} checklist${count.checklist > 1 ? "s" : ""} diário${count.checklist > 1 ? "s" : ""}`);
     if (count.atrasada > 0) parts.push(`${count.atrasada} atrasada${count.atrasada > 1 ? "s" : ""}`);
 
     const payload = { title: "Seu dia", body: parts.join(", "), url: "/cards" };
@@ -149,6 +234,7 @@ async function handle(request: Request) {
   const tomorrow = saoPauloDate(1);
   const digestAnchor = new Date(`${today}T${DIGEST_HOUR_BRT}${TZ_OFFSET}`);
   const digestDue = inWindow(digestAnchor, now);
+  const eveningDue = inWindow(new Date(`${today}T${CHECKLIST_EVENING_HOUR_BRT}${TZ_OFFSET}`), now);
 
   const events: ReminderEvent[] = [];
 
@@ -227,7 +313,11 @@ async function handle(request: Request) {
     totalSent += await sendMemberDigests(supabase, today);
   }
 
-  return NextResponse.json({ checked: events.length, sent: totalSent, digestDue });
+  if (eveningDue) {
+    totalSent += await sendChecklistEveningReminders(supabase, today);
+  }
+
+  return NextResponse.json({ checked: events.length, sent: totalSent, digestDue, eveningDue });
 }
 
 export async function GET(request: Request) {

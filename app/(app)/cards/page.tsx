@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { CardsExplorer } from "@/components/cards/cards-explorer";
+import { can } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { getCardLookups, getCardsWithRelations, type CardFilters } from "@/lib/queries/cards";
 
@@ -8,9 +9,12 @@ export default async function CardsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requirePermission("cards");
+  const access = await requirePermission("cards");
   const sp = await searchParams;
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
+
+  // Padrão: quadro Kanban. ?view=grid e ?view=list mantêm as visões antigas.
+  const view = get("view") === "list" ? "list" : get("view") === "grid" ? "grid" : "board";
 
   const filters: CardFilters = {
     cardTypeId: get("tipo"),
@@ -23,9 +27,9 @@ export default async function CardsPage({
     from: get("de"),
     to: get("ate"),
     pendente: get("pendente") === "1",
-    hideConcluido: get("concluidos") !== "1",
+    // O quadro sempre mostra a coluna Concluído; nas outras visões concluídos ficam ocultos por padrão.
+    hideConcluido: view !== "board" && get("concluidos") !== "1",
   };
-  const view = get("view") === "list" ? "list" : "grid";
 
   const lookups = await getCardLookups();
   const financeiroId = lookups.cardTypes.find((t) => t.key === "financeiro")?.id;
@@ -42,7 +46,13 @@ export default async function CardsPage({
           filters.pendente ? "Mostrando apenas cards pendentes." : "Todo o conteúdo da equipe em um único lugar."
         }
       />
-      <CardsExplorer cards={cards} lookups={visibleLookups} view={view} />
+      <CardsExplorer
+        cards={cards}
+        lookups={visibleLookups}
+        view={view}
+        enableBoard
+        canEdit={can(access, "cards_edit")}
+      />
     </>
   );
 }

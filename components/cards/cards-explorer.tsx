@@ -20,6 +20,7 @@ import {
 import { CardTile } from "@/components/cards/card-tile";
 import { CardListTable } from "@/components/cards/card-list-table";
 import { FilterBar } from "@/components/cards/filter-bar";
+import { KanbanBoard } from "@/components/cards/kanban-board";
 import { ViewToggle } from "@/components/cards/view-toggle";
 import { useQuickAddCard } from "@/components/cards/card-quick-add-provider";
 import { bulkDeleteCards, bulkDuplicateCards } from "@/lib/actions/cards";
@@ -31,11 +32,15 @@ export function CardsExplorer({
   lookups,
   view,
   newCardSlot,
+  canEdit = true,
+  enableBoard = false,
 }: {
   cards: CardWithRelations[];
   lookups: CardLookups;
-  view: "grid" | "list";
+  view: "board" | "grid" | "list";
   newCardSlot?: React.ReactNode;
+  canEdit?: boolean;
+  enableBoard?: boolean;
 }) {
   const openCreate = useQuickAddCard();
   const router = useRouter();
@@ -46,15 +51,24 @@ export function CardsExplorer({
   const [isBulkWorking, setIsBulkWorking] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
 
-  const sortKey = searchParams.get("ordenar") ?? "recentes";
+  // No quadro a ordem padrão é a manual (a que você define arrastando); nas demais visões, os mais recentes.
+  const sortKey = searchParams.get("ordenar") ?? (view === "board" ? "manual" : "recentes");
   function setSortKey(value: string | null) {
     const params = new URLSearchParams(searchParams.toString());
-    if (!value || value === "recentes") params.delete("ordenar");
+    if (!value || value === (view === "board" ? "manual" : "recentes")) params.delete("ordenar");
     else params.set("ordenar", value);
     router.push(`${pathname}?${params.toString()}`);
   }
 
   const sortedCards = sortCards(cards, sortKey, lookups.priorities);
+  const isBoard = view === "board";
+
+  // Colunas do quadro: um status ativo por coluna, na ordem das Configurações. "Arquivado" só aparece
+  // se for filtrado de propósito; um filtro de Status mostra apenas aquela coluna.
+  const statusFilter = searchParams.get("status");
+  const boardColumns = lookups.statuses.filter((s) =>
+    statusFilter ? s.id === statusFilter : s.key !== "arquivado",
+  );
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -109,9 +123,9 @@ export function CardsExplorer({
 
   return (
     <>
-      <FilterBar lookups={lookups} />
+      <FilterBar lookups={lookups} hideConcluidosToggle={isBoard} />
 
-      {selectedIds.size > 0 ? (
+      {selectedIds.size > 0 && !isBoard ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2">
           <span className="text-sm text-muted-foreground">
             {selectedIds.size} selecionado{selectedIds.size > 1 ? "s" : ""}
@@ -148,7 +162,7 @@ export function CardsExplorer({
       ) : (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <ViewToggle />
+            <ViewToggle withBoard={enableBoard} />
             <Select value={sortKey} onValueChange={setSortKey}>
               <SelectTrigger size="sm" className="w-fit">
                 <span className="text-xs text-muted-foreground">Ordenar:</span>
@@ -174,7 +188,9 @@ export function CardsExplorer({
 
       {bulkError ? <p className="mb-3 text-sm text-destructive">{bulkError}</p> : null}
 
-      {sortedCards.length === 0 ? (
+      {isBoard ? (
+        <KanbanBoard cards={cards} lookups={lookups} columns={boardColumns} sortKey={sortKey} canEdit={canEdit} />
+      ) : sortedCards.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
           <p>Nenhum card encontrado.</p>
           {newCardSlot ? null : (

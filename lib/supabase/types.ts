@@ -76,6 +76,179 @@ export type Database = {
           },
         ]
       }
+      card_checklist_items: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          done: boolean
+          done_on: string | null
+          id: string
+          sort_order: number
+          text: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          done?: boolean
+          done_on?: string | null
+          id?: string
+          sort_order?: number
+          text: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          done?: boolean
+          done_on?: string | null
+          id?: string
+          sort_order?: number
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "card_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_checklists: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          repeat_daily: boolean
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          repeat_daily?: boolean
+          sort_order?: number
+          title?: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          repeat_daily?: boolean
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_checklists_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_comments: {
+        Row: {
+          author_id: string | null
+          body: string
+          card_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          card_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          card_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_comments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_links: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          title: string | null
+          url: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          url: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_links_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_daily_log: {
+        Row: {
+          checklist_id: string
+          done_count: number
+          log_date: string
+          total_count: number
+        }
+        Insert: {
+          checklist_id: string
+          done_count?: number
+          log_date: string
+          total_count?: number
+        }
+        Update: {
+          checklist_id?: string
+          done_count?: number
+          log_date?: string
+          total_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_daily_log_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "card_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_modelos: {
         Row: {
           card_id: string
@@ -200,7 +373,9 @@ export type Database = {
         Row: {
           card_number: number
           card_type_id: string
+          board_position: number | null
           concluded_at: string | null
+          cover_color: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -219,7 +394,9 @@ export type Database = {
         Insert: {
           card_number?: number
           card_type_id: string
+          board_position?: number | null
           concluded_at?: string | null
+          cover_color?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -238,7 +415,9 @@ export type Database = {
         Update: {
           card_number?: number
           card_type_id?: string
+          board_position?: number | null
           concluded_at?: string | null
+          cover_color?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -431,18 +610,21 @@ export type Database = {
           created_at: string
           digest_date: string
           id: string
+          kind: string
           team_member_id: string
         }
         Insert: {
           created_at?: string
           digest_date: string
           id?: string
+          kind?: string
           team_member_id: string
         }
         Update: {
           created_at?: string
           digest_date?: string
           id?: string
+          kind?: string
           team_member_id?: string
         }
         Relationships: [

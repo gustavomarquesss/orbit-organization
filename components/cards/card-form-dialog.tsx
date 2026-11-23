@@ -8,11 +8,13 @@ export function CardFormDialog({
   open,
   onOpenChange,
   lookups,
+  defaultStatusId,
   onSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lookups: CardLookups;
+  defaultStatusId?: string;
   onSuccess: () => void;
 }) {
   return (
@@ -21,7 +23,7 @@ export function CardFormDialog({
         <DialogHeader>
           <DialogTitle>Novo Card</DialogTitle>
         </DialogHeader>
-        <CardForm lookups={lookups} onSuccess={onSuccess} onCancel={() => onOpenChange(false)} />
+        <CardForm lookups={lookups} defaultStatusId={defaultStatusId} onSuccess={onSuccess} onCancel={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

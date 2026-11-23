@@ -40,13 +40,17 @@ const cardFormValuesSchema = cardFormSchema.extend({
 
 export type CardFormValues = z.infer<typeof cardFormValuesSchema>;
 
-function toDefaultValues(card?: CardWithRelations | null, meeting?: MeetingDetails | null): CardFormValues {
+function toDefaultValues(
+  card?: CardWithRelations | null,
+  meeting?: MeetingDetails | null,
+  defaultStatusId?: string,
+): CardFormValues {
   return {
     title: card?.title ?? "",
     description: card?.description ?? "",
     card_type_id: card?.card_type?.id ?? "",
     modelo_ids: card?.card_modelos?.map((cm) => cm.modelo?.id).filter((id): id is string => Boolean(id)) ?? [],
-    status_id: card?.status?.id ?? "",
+    status_id: card?.status?.id ?? defaultStatusId ?? "",
     priority_id: card?.priority?.id ?? "",
     responsavel_ids:
       card?.card_responsaveis?.map((cr) => cr.team_member?.id).filter((id): id is string => Boolean(id)) ?? [],
@@ -66,12 +70,14 @@ export function CardForm({
   lookups,
   card,
   meetingDetails,
+  defaultStatusId,
   onSuccess,
   onCancel,
 }: {
   lookups: CardLookups;
   card?: CardWithRelations | null;
   meetingDetails?: MeetingDetails | null;
+  defaultStatusId?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -89,7 +95,7 @@ export function CardForm({
     formState: { errors, isSubmitting },
   } = useForm<CardFormValues>({
     resolver: zodResolver(cardFormValuesSchema),
-    defaultValues: toDefaultValues(card, meetingDetails),
+    defaultValues: toDefaultValues(card, meetingDetails, defaultStatusId),
   });
 
   // O tipo Financeiro tem seu próprio formulário (aba Financeiro) e nunca

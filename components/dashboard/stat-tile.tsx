@@ -43,10 +43,10 @@ export function StatTile({
       <div
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-lg",
-          active ? active.iconWrap : "bg-muted",
+          active ? active.iconWrap : "bg-primary/15",
         )}
       >
-        <Icon className={cn("size-4.5", active ? active.icon : "text-muted-foreground")} />
+        <Icon className={cn("size-4.5", active ? active.icon : "text-primary")} />
       </div>
       <div className="min-w-0">
         <div className={cn("text-2xl font-semibold tabular-nums", active?.value)}>{value}</div>
@@ -60,7 +60,7 @@ export function StatTile({
     return (
       <Link
         href={href}
-        className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/20 hover:bg-accent/40"
+        className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
       >
         {content}
       </Link>

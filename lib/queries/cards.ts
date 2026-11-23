@@ -1,6 +1,7 @@
 import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCardListExtras } from "@/lib/queries/card-extras";
 
 const CARD_SELECT = `
   id, card_number, title, description, observacoes, created_at, updated_at, recorrencia, prazo_data, prazo_hora,
@@ -39,6 +40,10 @@ export type CardWithRelations = {
   card_modelos: { modelo: { id: string; name: string } | null }[];
   created_by_member: { id: string; full_name: string; avatar_color: string; avatar_url: string | null } | null;
   updated_by_member: { id: string; full_name: string; avatar_color: string; avatar_url: string | null } | null;
+  // Preenchidos por getCardListExtras (ficam vazios se a migration 0017 não foi aplicada).
+  cover_color?: string | null;
+  board_position?: number | null;
+  checklist?: { done: number; total: number; daily: boolean } | null;
   financeiro_details: {
     tipo: "gasto" | "receita";
     valor: number;
@@ -53,7 +58,14 @@ export async function getCardById(id: string): Promise<CardWithRelations | null>
   const { data, error } = await supabase.from("cards").select(CARD_SELECT).eq("id", id).maybeSingle();
 
   if (error) throw error;
-  return (data as unknown as CardWithRelations) ?? null;
+  const card = (data as unknown as CardWithRelations) ?? null;
+  if (card) {
+    const extra = (await getCardListExtras()).get(card.id);
+    card.cover_color = extra?.cover_color ?? null;
+    card.board_position = extra?.board_position ?? null;
+    card.checklist = extra?.checklist ?? null;
+  }
+  return card;
 }
 
 export type CardActivityEntry = {
@@ -157,7 +169,15 @@ export async function getCardsWithRelations(filters: CardFilters = {}): Promise<
   const { data, error } = await query;
 
   if (error) throw error;
-  return (data ?? []) as unknown as CardWithRelations[];
+  const cards = (data ?? []) as unknown as CardWithRelations[];
+  const extras = await getCardListExtras();
+  for (const card of cards) {
+    const extra = extras.get(card.id);
+    card.cover_color = extra?.cover_color ?? null;
+    card.board_position = extra?.board_position ?? null;
+    card.checklist = extra?.checklist ?? null;
+  }
+  return cards;
 }
 
 export type LookupRow = { id: string; label: string };

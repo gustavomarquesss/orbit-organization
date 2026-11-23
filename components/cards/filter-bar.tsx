@@ -23,7 +23,14 @@ const FILTER_KEYS = [
   "concluidos",
 ];
 
-export function FilterBar({ lookups }: { lookups: CardLookups }) {
+export function FilterBar({
+  lookups,
+  hideConcluidosToggle = false,
+}: {
+  lookups: CardLookups;
+  // No quadro Kanban a coluna "Concluído" já mostra os concluídos.
+  hideConcluidosToggle?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -110,13 +117,15 @@ export function FilterBar({ lookups }: { lookups: CardLookups }) {
         />
       </div>
 
-      <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Checkbox
-          checked={searchParams.get("concluidos") === "1"}
-          onCheckedChange={(checked) => setParam("concluidos", checked ? "1" : "")}
-        />
-        Cards concluídos
-      </label>
+      {hideConcluidosToggle ? null : (
+        <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Checkbox
+            checked={searchParams.get("concluidos") === "1"}
+            onCheckedChange={(checked) => setParam("concluidos", checked ? "1" : "")}
+          />
+          Cards concluídos
+        </label>
+      )}
 
       {hasActiveFilters ? (
         <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1.5">

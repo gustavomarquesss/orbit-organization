@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -8,7 +9,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        default:
+          "bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-sm shadow-violet-500/25 hover:brightness-110 hover:shadow-md hover:shadow-violet-500/30",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
@@ -44,14 +46,25 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  loading = false,
+  children,
+  disabled,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    // Mostra um spinner e bloqueia cliques enquanto uma ação está em andamento.
+    loading?: boolean
+  }) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
       {...props}
-    />
+    >
+      {loading ? <Loader2 className="animate-spin" aria-hidden /> : null}
+      {children}
+    </ButtonPrimitive>
   )
 }
 

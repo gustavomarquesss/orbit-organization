@@ -9,15 +9,17 @@ export const mainNavItems: {
   label: string;
   icon: typeof LayoutDashboard;
   permission: PermissionKey | null;
+  // Cada área tem sua cor: ajuda a se situar de relance.
+  tone: string;
 }[] = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
-  { href: "/cards", label: "Cards", icon: LayoutGrid, permission: "cards" },
-  { href: "/reunioes", label: "Reuniões", icon: CalendarDays, permission: "reunioes" },
-  { href: "/financeiro", label: "Financeiro", icon: Wallet, permission: "financeiro" },
-  { href: "/perfil", label: "Perfil", icon: User, permission: null },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard", tone: "text-violet-400" },
+  { href: "/cards", label: "Cards", icon: LayoutGrid, permission: "cards", tone: "text-sky-400" },
+  { href: "/reunioes", label: "Reuniões", icon: CalendarDays, permission: "reunioes", tone: "text-cyan-400" },
+  { href: "/financeiro", label: "Financeiro", icon: Wallet, permission: "financeiro", tone: "text-emerald-400" },
+  { href: "/perfil", label: "Perfil", icon: User, permission: null, tone: "text-pink-400" },
 ];
 
-export const adminNavItem = { href: "/admin", label: "Admin", icon: ShieldCheck };
+export const adminNavItem = { href: "/admin", label: "Admin", icon: ShieldCheck, tone: "text-amber-400" };
 
 export const settingsNavItems: { href: string; label: string; permission: PermissionKey | null }[] = [
   { href: "/configuracoes/tipos", label: "Tipos de Card", permission: "configuracoes" },

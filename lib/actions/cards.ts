@@ -207,6 +207,30 @@ async function notifyCardReopened(supabase: SupabaseClient, cardId: string, titl
   }
 }
 
+// Registra no histórico e notifica a equipe quando o status de um card muda.
+async function recordStatusChange(
+  supabase: SupabaseClient,
+  cardId: string,
+  title: string,
+  actorId: string | null,
+  fromStatusId: string,
+  toStatusId: string,
+) {
+  const { data: statuses } = await supabase.from("statuses").select("id, label, key").in("id", [fromStatusId, toStatusId]);
+  const fromStatus = statuses?.find((s) => s.id === fromStatusId);
+  const toStatus = statuses?.find((s) => s.id === toStatusId);
+  await logCardActivity(supabase, cardId, actorId, "status_changed", {
+    from_label: fromStatus?.label ?? null,
+    to_label: toStatus?.label ?? null,
+  });
+
+  if (actorId && toStatus?.key === "concluido" && fromStatus?.key !== "concluido") {
+    await notifyCardCompleted(supabase, cardId, title, actorId);
+  } else if (actorId && fromStatus?.key === "concluido" && toStatus?.key !== "concluido") {
+    await notifyCardReopened(supabase, cardId, title, actorId);
+  }
+}
+
 export async function createCard(input: CardFormInput): Promise<CardActionResult> {
   const parsed = cardFormSchema.safeParse(input);
   if (!parsed.success) {
@@ -302,22 +326,7 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
   await syncCardModelos(supabase, id, modelo_ids);
 
   if (previousCard && previousCard.status_id !== rest.status_id) {
-    const { data: statuses } = await supabase
-      .from("statuses")
-      .select("id, label, key")
-      .in("id", [previousCard.status_id, rest.status_id]);
-    const fromStatus = statuses?.find((s) => s.id === previousCard.status_id);
-    const toStatus = statuses?.find((s) => s.id === rest.status_id);
-    await logCardActivity(supabase, id, actorId, "status_changed", {
-      from_label: fromStatus?.label ?? null,
-      to_label: toStatus?.label ?? null,
-    });
-
-    if (actorId && toStatus?.key === "concluido" && fromStatus?.key !== "concluido") {
-      await notifyCardCompleted(supabase, id, rest.title, actorId);
-    } else if (actorId && fromStatus?.key === "concluido" && toStatus?.key !== "concluido") {
-      await notifyCardReopened(supabase, id, rest.title, actorId);
-    }
+    await recordStatusChange(supabase, id, rest.title, actorId, previousCard.status_id, rest.status_id);
   }
 
   const previousResponsavelIds = new Set((previousResponsaveis ?? []).map((r) => r.team_member_id));
@@ -359,6 +368,60 @@ export async function updateCard(id: string, input: CardFormInput): Promise<Card
   return { id };
 }
 
+// Move o card para outra coluna e/ou posição (arrastar no quadro Kanban). `positions` traz a nova
+// posição do card movido e, se precisou renumerar a coluna, dos vizinhos. A recorrência de cards
+// concluídos continua sendo tratada pelo trigger do banco.
+export async function moveCardToStatus(
+  cardId: string,
+  statusId: string,
+  positions: { id: string; position: number }[] = [],
+): Promise<CardActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada. Entre novamente." };
+
+  const denied = await checkCardWriteAccess(supabase, [], cardId);
+  if (denied) return { error: denied };
+
+  if (positions.length > 300 || positions.some((p) => !p.id || !Number.isFinite(p.position))) {
+    return { error: "Posição inválida." };
+  }
+
+  const { data: card } = await supabase.from("cards").select("title, status_id").eq("id", cardId).maybeSingle();
+  if (!card) return { error: "Card não encontrado." };
+
+  const ownPosition = positions.find((p) => p.id === cardId)?.position;
+  const statusChanged = card.status_id !== statusId;
+
+  if (statusChanged || ownPosition !== undefined) {
+    let { error } = await supabase
+      .from("cards")
+      .update({ status_id: statusId, ...(ownPosition !== undefined ? { board_position: ownPosition } : {}) })
+      .eq("id", cardId);
+    // Banco ainda sem a migration 0018 (coluna board_position): move só o status.
+    if (error && ownPosition !== undefined) {
+      ({ error } = await supabase.from("cards").update({ status_id: statusId }).eq("id", cardId));
+    }
+    if (error) return { error: "Não foi possível mover o card." };
+  }
+
+  const others = positions.filter((p) => p.id !== cardId);
+  if (others.length > 0) {
+    await Promise.all(others.map((p) => supabase.from("cards").update({ board_position: p.position }).eq("id", p.id)));
+  }
+
+  if (statusChanged) {
+    await recordStatusChange(supabase, cardId, card.title, user.id, card.status_id, statusId);
+  }
+
+  revalidatePath("/cards");
+  revalidatePath("/reunioes");
+  revalidatePath("/");
+  return { id: cardId };
+}
+
 export async function deleteCard(id: string): Promise<CardActionResult> {
   const denied = await checkPermission("cards_delete");
   if (denied) return { error: denied };
@@ -372,6 +435,42 @@ export async function deleteCard(id: string): Promise<CardActionResult> {
   revalidatePath("/financeiro");
   revalidatePath("/");
   return { id };
+}
+
+// Copia capa e checklists (com todos os itens desmarcados) para o card duplicado. Best-effort:
+// se a migration 0017 ainda não existir no banco, a duplicação segue normalmente sem isso.
+async function copyCardExtras(supabase: SupabaseClient, fromCardId: string, toCardId: string) {
+  try {
+    const [{ data: cover }, { data: lists }] = await Promise.all([
+      supabase.from("cards").select("cover_color").eq("id", fromCardId).maybeSingle(),
+      supabase
+        .from("card_checklists")
+        .select("title, repeat_daily, sort_order, card_checklist_items(text, sort_order)")
+        .eq("card_id", fromCardId),
+    ]);
+
+    if (cover?.cover_color) {
+      await supabase.from("cards").update({ cover_color: cover.cover_color }).eq("id", toCardId);
+    }
+
+    for (const list of lists ?? []) {
+      const { data: created } = await supabase
+        .from("card_checklists")
+        .insert({ card_id: toCardId, title: list.title, repeat_daily: list.repeat_daily, sort_order: list.sort_order })
+        .select("id")
+        .single();
+      if (!created || !list.card_checklist_items?.length) continue;
+      await supabase.from("card_checklist_items").insert(
+        list.card_checklist_items.map((item) => ({
+          checklist_id: created.id,
+          text: item.text,
+          sort_order: item.sort_order,
+        })),
+      );
+    }
+  } catch {
+    // extras são opcionais
+  }
 }
 
 export async function duplicateCard(id: string): Promise<CardActionResult> {
@@ -443,6 +542,8 @@ export async function duplicateCard(id: string): Promise<CardActionResult> {
   if (financeiro) {
     await supabase.from("financeiro_details").insert({ card_id: newCard.id, ...financeiro });
   }
+
+  await copyCardExtras(supabase, id, newCard.id);
 
   await logCardActivity(supabase, newCard.id, user.id, "created");
   await notifyCardCreated(supabase, newCard.id, `${original.title} (cópia)`, user.id, original.priority_id);

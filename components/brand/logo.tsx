@@ -20,9 +20,11 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function Logo({ className, iconClassName }: { className?: string; iconClassName?: string }) {
   return (
-    <span className={cn("flex items-center gap-2 font-semibold", className)}>
-      <LogoMark className={iconClassName} />
-      Orbit
+    <span className={cn("flex items-center gap-2 text-base font-bold tracking-tight", className)}>
+      <span className="flex size-7 items-center justify-center rounded-lg bg-brand-gradient text-white shadow-md shadow-violet-500/30">
+        <LogoMark className={cn("size-4", iconClassName)} />
+      </span>
+      <span className="text-gradient">Orbit</span>
     </span>
   );
 }

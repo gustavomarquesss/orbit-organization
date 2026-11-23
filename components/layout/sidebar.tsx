@@ -4,7 +4,7 @@ import type { NavAccess } from "./nav-items";
 
 export function Sidebar({ access }: { access: NavAccess }) {
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur md:flex">
       <div className="flex h-14 shrink-0 items-center px-4 text-sm text-sidebar-foreground">
         <Logo />
       </div>

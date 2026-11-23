@@ -1,6 +1,7 @@
 import type { CardLookups, CardWithRelations } from "@/lib/queries/cards";
 
 export const CARD_SORT_OPTIONS = [
+  { value: "manual", label: "Ordem manual (arrastar)" },
   { value: "recentes", label: "Mais recentes" },
   { value: "titulo", label: "Título (A-Z)" },
   { value: "responsavel", label: "Responsável (A-Z)" },
@@ -28,6 +29,15 @@ export function sortCards(
   const sorted = [...cards];
 
   switch (sortKey) {
+    case "manual":
+      // Cards sem posição (nunca arrastados) ficam depois dos posicionados, do mais recente ao mais antigo.
+      sorted.sort((a, b) => {
+        const pa = a.board_position ?? Number.POSITIVE_INFINITY;
+        const pb = b.board_position ?? Number.POSITIVE_INFINITY;
+        if (pa !== pb) return pa < pb ? -1 : 1;
+        return b.updated_at.localeCompare(a.updated_at);
+      });
+      break;
     case "titulo":
       sorted.sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
       break;

@@ -36,6 +36,15 @@
 - Arquivos do repo têm CRLF no working copy: ao editar via script, normalizar 
 .
 
+## Kanban, checklists e visual novo (2026-11-22, deploy feito: dev -> main)
+- **Migration 0017 precisa ser aplicada no Supabase pelo usuário** (`0017_checklists_comments_links_cover.sql`): checklists (+itens +log diário), comentários, links, `cards.cover_color`, e trigger de recorrência que copia capa/checklists. Sem ela o app roda, mas as abas novas mostram aviso (queries de extras nunca lançam erro).
+- `/cards` agora é Kanban por padrão (`?view=grid|list` mantém as antigas). Colunas = statuses ativos (sem `arquivado`) na ordem de `sort_order`; arrastar chama `moveCardToStatus` (lib/actions/cards.ts). Usa `@dnd-kit/core`. Reuniões/Financeiro continuam só grid/lista (`enableBoard` só na aba Cards).
+- Card ganhou abas (components/cards/card-tabs.tsx): Detalhes (+capa colorida), Checklist, Comentários, Anexos (links), Histórico. Checklist diário: item vale como feito se `done_on = hoje (BRT)` — zera sozinho, sem cron; `checklist_daily_log` guarda histórico/streak. Helpers client-safe em `lib/utils/checklist.ts` e `lib/utils/brt.ts` (não importar `lib/queries/card-extras.ts` em client component — puxa next/headers).
+- Configurações: editar (inline), excluir (com contagem de uso; modelos/tags limpam vínculo, status/prioridade/tipo bloqueiam se em uso), reordenar. Chaves protegidas (a_fazer, concluido, arquivado, urgente, financeiro, reuniao): renomeia mas não exclui. A chave agora é gerada do nome.
+- Visual: tema violeta/índigo em app/globals.css, botão primário em degradê, `Button loading`, barra de progresso de rota, loading.tsx (app e cards), template.tsx com fade.
+- Pasta local ainda se chama firma-milionaria; usuário escolheu renomear só a pasta para orbit-organization (GitHub/Vercel ficam saas-organization).
+- Migration 0018 (`board_position` para ordem manual no quadro + `member_digest_log.kind`): ordem manual é o padrão do quadro; lembrete das 8h (checklists diários no "Seu dia") e das 18h BRT (checklist incompleto) rodam pelo cron existente. Sem a 0018 o app funciona (só não reordena nem manda o das 18h). Usuário testou localmente antes do deploy.
+
 ## Preferências do usuário / regras de trabalho
 - Workflow de memória persistente: ler MEMORY.md no início de cada tarefa, executar, apresentar MEMORY.md atualizado no fim. Manter abaixo de 150 linhas.
 - Commits/mensagens de log do projeto são em português.

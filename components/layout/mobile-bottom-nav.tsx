@@ -15,7 +15,7 @@ export function MobileBottomNav({ access }: { access: NavAccess }) {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t border-sidebar-border bg-sidebar/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
       {bottomNavItems.map((item) => {
         const Icon = item.icon;
         const active =
@@ -26,10 +26,10 @@ export function MobileBottomNav({ access }: { access: NavAccess }) {
             href={item.href}
             className={cn(
               "flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
-              active ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/60",
+              active ? "text-primary" : "text-sidebar-foreground/60",
             )}
           >
-            <Icon className={cn("size-5", active && "text-sidebar-accent-foreground")} />
+            <Icon className={cn("size-5 transition-transform", active && "scale-110 text-primary")} />
             {item.label}
           </Link>
         );
