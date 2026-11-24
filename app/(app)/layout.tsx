@@ -1,3 +1,4 @@
+import { AssistantWidget } from "@/components/assistant/assistant-widget";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
@@ -35,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <MobileBottomNav access={navAccess} />
+        <AssistantWidget />
       </CardQuickAddProvider>
     </SearchProvider>
   );
